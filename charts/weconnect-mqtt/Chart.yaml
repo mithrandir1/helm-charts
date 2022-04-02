@@ -2,5 +2,5 @@ apiVersion: v2
 name: weconnect-mqtt
 description: MQTT Client that publishes data from Volkswagen WeConnect Services
 type: application
-version: 0.1.2
-appVersion: "0.29.1"
+version: 0.1.3
+appVersion: "0.32.0"
