@@ -3,6 +3,17 @@ entries:
   py-kms:
   - apiVersion: v2
     appVersion: "2022-02-11"
+    created: "2022-04-02T15:18:14.102654346Z"
+    description: 'py-kms is a port of node-kms created by cyrozap, which is a port
+      of either the C#, C++, or  .NET implementations of KMS Emulator. '
+    digest: cacfe06e94d6c7d4517678f11e267af059dc8823d9c65326786d33c0142194eb
+    name: py-kms
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/py-kms-0.1.1/py-kms-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: "2022-02-11"
     created: "2022-04-02T14:40:26.010886305Z"
     description: 'py-kms is a port of node-kms created by cyrozap, which is a port
       of either the C#, C++, or  .NET implementations of KMS Emulator. '
@@ -33,4 +44,4 @@ entries:
     urls:
     - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.1/weconnect-mqtt-0.1.1.tgz
     version: 0.1.1
-generated: "2022-04-02T14:40:26.010902105Z"
+generated: "2022-04-02T15:18:14.102675446Z"
