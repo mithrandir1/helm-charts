@@ -28,6 +28,8 @@ persistence:
   accessModes:
     - ReadWriteOnce
 
+TZ: Europe/Vienna
+
 service:
   kms:
     type: ClusterIP
