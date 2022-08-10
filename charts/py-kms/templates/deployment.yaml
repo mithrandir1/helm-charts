@@ -30,6 +30,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "python3" }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: SQLITE
+              value: "true"
+            - name: TZ
+              value: "{{ .Values.TZ }}"
           ports:
             - name: http
               containerPort: 8080
@@ -37,14 +42,14 @@ spec:
             - name: kms
               containerPort: 1688
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+          #livenessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: http
+          #readinessProbe:
+          #  httpGet:
+          #    path: /
+          #    port: http
           {{- if .Values.persistence.enabled }}
           volumeMounts:
             - mountPath: /home/py-kms/db
