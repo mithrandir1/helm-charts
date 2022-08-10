@@ -58,6 +58,16 @@ entries:
     version: 0.1.0
   weconnect-mqtt:
   - apiVersion: v2
+    appVersion: 0.38.3
+    created: "2022-08-10T20:15:24.300420023Z"
+    description: MQTT Client that publishes data from Volkswagen WeConnect Services
+    digest: 4aa0b1bab9bfeeceaf0d0db8e751b4c029fe837972b1ef6dcd42911d854a644b
+    name: weconnect-mqtt
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.5/weconnect-mqtt-0.1.5.tgz
+    version: 0.1.5
+  - apiVersion: v2
     appVersion: 0.32.0
     created: "2022-04-02T17:03:18.796868393Z"
     description: MQTT Client that publishes data from Volkswagen WeConnect Services
@@ -87,4 +97,4 @@ entries:
     urls:
     - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.1/weconnect-mqtt-0.1.1.tgz
     version: 0.1.1
-generated: "2022-04-02T17:03:18.796888405Z"
+generated: "2022-08-10T20:15:24.300577825Z"
