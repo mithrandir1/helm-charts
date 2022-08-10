@@ -12,7 +12,7 @@ spec:
       protocol: TCP
       name: kms
       {{- if contains "NodePort" .Values.service.kms.type }}
-      Nodeport: {{ .Values.service.kms.nodePort }}
+      nodePort: {{ .Values.service.kms.nodePort }}
       {{- end }}
   selector:
     {{- include "py-kms.selectorLabels" . | nindent 4 }}
