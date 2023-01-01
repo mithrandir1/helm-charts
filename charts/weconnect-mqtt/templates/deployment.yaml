@@ -42,6 +42,8 @@ spec:
               value: "{{ .Values.additional_parameters }}"
             - name: TZ
               value: "{{ .Values.TZ }}"
+            - name: LC_ALL
+              value: "{{ .Values.LC_ALL }}"
           #ports:
           #  - name: http
           #    containerPort: 80
