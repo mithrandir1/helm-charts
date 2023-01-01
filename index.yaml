@@ -2,6 +2,17 @@ apiVersion: v1
 entries:
   py-kms:
   - apiVersion: v2
+    appVersion: "2022-12-12"
+    created: "2023-01-01T11:33:37.803965004Z"
+    description: 'py-kms is a port of node-kms created by cyrozap, which is a port
+      of either the C#, C++, or  .NET implementations of KMS Emulator. '
+    digest: 6097ba9df17ca5578fa6cab4d6257d45cdfc28b867b787265f4940055253eb33
+    name: py-kms
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/py-kms-0.1.5/py-kms-0.1.5.tgz
+    version: 0.1.5
+  - apiVersion: v2
     appVersion: "2022-02-11"
     created: "2022-04-02T17:02:31.641697331Z"
     description: 'py-kms is a port of node-kms created by cyrozap, which is a port
@@ -58,6 +69,16 @@ entries:
     version: 0.1.0
   weconnect-mqtt:
   - apiVersion: v2
+    appVersion: 0.41.1
+    created: "2023-01-01T11:33:37.990288925Z"
+    description: MQTT Client that publishes data from Volkswagen WeConnect Services
+    digest: f8ba53c3953563c9e1fd44d3dd22ad2f4347b79e4401198b28333da1b0823a9a
+    name: weconnect-mqtt
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.6/weconnect-mqtt-0.1.6.tgz
+    version: 0.1.6
+  - apiVersion: v2
     appVersion: 0.38.3
     created: "2022-08-10T20:15:24.300420023Z"
     description: MQTT Client that publishes data from Volkswagen WeConnect Services
@@ -97,4 +118,4 @@ entries:
     urls:
     - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.1/weconnect-mqtt-0.1.1.tgz
     version: 0.1.1
-generated: "2022-08-10T20:15:24.300577825Z"
+generated: "2023-01-01T11:33:37.990357726Z"
