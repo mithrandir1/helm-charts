@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/py-kms-organization/py-kms
   pullPolicy: IfNotPresent
-  tag: "python3@sha256:a8d5005eb655fd2c5efbaa4eb6817f84a16fbe576c48a44a40f99c4cf17d55e7"
+  tag: "python3@sha256:144d9ca08cb72f3a2d9a1ada21fd841f234a0fe94b8343d1a23c1eb652596531"
 
 imagePullSecrets: []
 nameOverride: ""
