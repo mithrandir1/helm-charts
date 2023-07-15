@@ -4,5 +4,5 @@ description: |
   py-kms is a port of node-kms created by cyrozap, which is a port of either the C#, C++, or 
   .NET implementations of KMS Emulator.
 type: application
-version: 0.1.5
-appVersion: "2022-12-12"
+version: 0.1.6
+appVersion: "2023-06-09"
