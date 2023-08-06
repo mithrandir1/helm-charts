@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: dovecot
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+  dovecot.conf: |
+    ###############
+    # General
+    ###############
+    log_path=/dev/stdout
+    info_log_path=/dev/stdout
+    debug_log_path=/dev/stdout
+    protocols = imap pop3 submission sieve lmtp
+    {{- if .Values.dovecot.postmaster_address }}
+    postmaster_address = {{ .Values.dovecot.postmaster_address }}
+    {{- end }}
+    {{- if .Values.dovecot.hostname }}
+    hostname = {{ .Values.dovecot.hostname }}
+    {{- end }}
+
+    ###############
+    # Mailboxes
+    ###############
+    mail_uid=1000
+    mail_gid=1000
+    first_valid_uid = 1000
+    last_valid_uid = 1000
+    #mail_plugins = fts fts-xapian zlib
+
+    ###############
+    # Authentication
+    ###############
+    {{- if .Values.dovecot.ldap.enabled }}
+    passdb {
+      args = /etc/dovecot/dovecot-ldap.conf
+      driver = ldap
+    }
+    userdb {
+      driver = prefetch
+    }
+    userdb {
+      args = /etc/dovecot/dovecot-ldap.conf
+      driver = ldap
+    }
+    {{- else }}
+    mail_home=/srv/mail/%Lu
+    mail_location=sdbox:~/Mail
+    passdb {
+      driver = static
+      args = password=pass
+    }
+    {{- end }}
+
+    ssl=no
+
+    namespace {
+      inbox = yes
+      separator = /
+    }
+
+    service lmtp {
+      inet_listener {
+        port = 24
+      }
+    }
+
+    listen = *
+    submission_relay_host = {{ .Values.dovecot.submission.relay_host }}
+
+    ###############
+    # Doveadm
+    ###############
+    doveadm_password = env:DOVEADM_PASSWD
+    service doveadm {
+      unix_listener doveadm-server {
+          user = vmail
+      }
+      inet_listener http {
+          port = 8080
+          #ssl = yes # uncomment to enable https
+      }
+    }
+
+    !include /etc/dovecot/conf.d/*.conf
+  dovecot-ldap.conf: |
+    uris            = {{ join " " .Values.dovecot.ldap.uris }}
+    {{- if .Values.dovecot.ldap.ca_cert }}
+    tls_ca_cert_file = /etc/dovecot/ca.crt
+    {{- end }}
+    tls_require_cert = {{ .Values.dovecot.ldap.tls_require_cert }}
+    ldap_version    = 3
+    auth_bind       = yes
+    blocking        = yes
+    dn              = env:DOVECOT_LDAP_DN
+    dnpass          = env:DOVECOT_LDAP_PASSWD
+    base            = {{ .Values.dovecot.ldap.base }}
+    scope           = {{ .Values.dovecot.ldap.scope }}
+    deref           = {{ .Values.dovecot.ldap.dereference }}
+    user_filter     = {{ .Values.dovecot.ldap.user_filter }}
+    pass_filter     = {{ .Values.dovecot.ldap.pass_filter }}
+    pass_attrs      = {{ .Values.dovecot.ldap.pass_user }}=user,{{ .Values.dovecot.ldap.pass_password}}=password
+    default_pass_scheme = {{ .Values.dovecot.ldap.pass_scheme }}
+    user_attrs      = =home=/srv/mail/%Ln/,=mail=maildir:/srv/mail/%Ln/Mail/
+    debug_level     = {{ .Values.dovecot.ldap.debug_level }}
+  {{- if .Values.dovecot.ldap.ca_cert }}
+  ca.crt:
+    {{- .Values.dovecot.ldap.ca_cert | nindent 4 }}
+  {{- end }}
