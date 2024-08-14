@@ -1,6 +1,44 @@
 apiVersion: v1
 entries:
+  Dovecot:
+  - annotations:
+      category: Mail
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 2.3.20
+    created: "2024-08-14T20:40:09.898916812Z"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: The Secure IMAP server
+    digest: 61620f5e22ce15bb9abba460cf63cea33a7fc9147e7d85c80f873b0b947e1fad
+    home: https://www.dovecot.org/
+    maintainers:
+    - name: Mithrandir1
+      url: https://github.com/mithrandir1/helm-charts
+    name: Dovecot
+    sources:
+    - https://github.com/dovecot/core
+    - https://github.com/mithrandir1/helm-charts
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/Dovecot-0.1.0/Dovecot-0.1.0.tgz
+    version: 0.1.0
   py-kms:
+  - apiVersion: v2
+    appVersion: "2025-05-28"
+    created: "2024-08-14T20:40:10.001500813Z"
+    description: 'py-kms is a port of node-kms created by cyrozap, which is a port
+      of either the C#, C++, or  .NET implementations of KMS Emulator. '
+    digest: 51c4443c5f8f0fd10b7c5ce4a5fca10d9153b302c0ff289b108e6cf41d77c530
+    name: py-kms
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/py-kms-0.1.7/py-kms-0.1.7.tgz
+    version: 0.1.7
   - apiVersion: v2
     appVersion: "2023-06-09"
     created: "2023-07-15T20:18:27.323824803Z"
@@ -139,4 +177,4 @@ entries:
     urls:
     - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.1/weconnect-mqtt-0.1.1.tgz
     version: 0.1.1
-generated: "2023-07-15T20:18:27.323857604Z"
+generated: "2024-08-14T20:40:10.001550526Z"
