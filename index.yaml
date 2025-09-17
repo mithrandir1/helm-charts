@@ -27,6 +27,21 @@ entries:
     urls:
     - https://github.com/mithrandir1/helm-charts/releases/download/Dovecot-0.1.0/Dovecot-0.1.0.tgz
     version: 0.1.0
+  namespaces:
+  - apiVersion: v2
+    created: "2025-09-17T18:45:34.608643622Z"
+    description: A Helm chart to deploy namespaces and their depending resources,
+      like NetworkPolicies or Quotas etc.
+    digest: 5725143fc1e20a08432ac7fe46fc62fe432eb893fff16b52749a1f920d7c518d
+    maintainers:
+    - email: thomas.loibl@itdesign.at
+      name: Thomas Loibl - ITdesign software projects & consulting GmbH
+      url: https://www.itdesign.at/mitarbeiter/thomas-loibl/
+    name: namespaces
+    type: application
+    urls:
+    - https://github.com/mithrandir1/helm-charts/releases/download/namespaces-0.1.0/namespaces-0.1.0.tgz
+    version: 0.1.0
   py-kms:
   - apiVersion: v2
     appVersion: "2025-05-28"
@@ -187,4 +202,4 @@ entries:
     urls:
     - https://github.com/mithrandir1/helm-charts/releases/download/weconnect-mqtt-0.1.1/weconnect-mqtt-0.1.1.tgz
     version: 0.1.1
-generated: "2024-08-14T20:56:05.03428565Z"
+generated: "2025-09-17T18:45:34.608677666Z"
