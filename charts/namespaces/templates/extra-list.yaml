@@ -1,0 +1,15 @@
+{{- /*
+Copyright ITdesign software projects & consulting GmbH. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- range $key, $value := .Values.namespaces }}
+{{ if eq ( .enabled | toString) "true" }}
+{{ if .extraDeploy }}
+{{- range .extraDeploy }}
+---
+{{ include "common.tplvalues.render" (dict "value" . "context" $) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
