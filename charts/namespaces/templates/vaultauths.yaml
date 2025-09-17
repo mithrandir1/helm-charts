@@ -1,0 +1,21 @@
+{{- range $key, $value := .Values.namespaces }}
+{{ if eq ( .enabled | toString) "true" }}
+{{ if and .vaultSecrets .vaultSecrets.authentications }}
+{{- range .vaultSecrets.authentications }}
+{{- $name := .name | required "name is required for VaultAuth." }}
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: {{ .name | replace "_" "-" | quote }}
+  namespace: {{ $value.name | replace "_" "-" | quote }}
+spec:
+  method: kubernetes
+  mount: {{ required "mount is required for VaultAuth." .mount }}
+  kubernetes:
+    role: {{ required "role is required for VaultAuth." .role | quote }}
+    serviceAccount: {{ default "default" .serviceAccount | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

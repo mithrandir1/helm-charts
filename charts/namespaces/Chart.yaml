@@ -1,0 +1,9 @@
+apiVersion: v2
+name: namespaces
+description: A Helm chart to deploy namespaces and their depending resources, like NetworkPolicies or Quotas etc.
+maintainers:
+  - name: Thomas Loibl - ITdesign software projects & consulting GmbH
+    email: thomas.loibl@itdesign.at
+    url: https://www.itdesign.at/mitarbeiter/thomas-loibl/
+type: application
+version: 0.1.0

@@ -1,0 +1,212 @@
+# Example values files for a tenant onboarding
+# It is a huge file and can help you creating:
+#   - one or more namespaces including labels etc.
+#   - local project admin group (in case groups are not created by other mechnics like LDAP Group Sync)
+#   - GitOps (ArgoCD) Project, that limits allowed repos, clusters, permissions etc.
+#   - Resource Quotas
+#   - Limit Ranges
+#   - Creation of default Network Policies (same namespace, OpenShift Monitoring & API Server, OpenShift Ingress, Egress Deny All)
+#   - Creation of custom Network Policies
+#
+# This values file shows all possible settings. Most probably, you do not need to use everything.
+# I tried to make is as configuratble as possible and most settings are working with defaults values and all can be disabled by setting "enabled" to false
+#
+# This chart is basically a clone from : helper-proj-onboarding https://github.com/tjungbauer/helm-charts/tree/main/charts/helper-proj-onboarding
+
+global:
+  application_gitops_namespace: argocd
+  ingress_controller_range: 
+
+# List of namespaces this tenant shall manage.
+# A tenant or project may consist of multiple namespace
+namespaces:
+  # Name of the first Namespace
+  - name: &name my-main-app-project-1
+    # Is this Namespace enabled or not
+    enabled: false
+    # Create a rolebinding for a LDAP/OIDC group
+    # the group_name specifies the name of the group in the external authentication system
+    admin_group:
+      enabled: false
+      group_name: admins
+      users: []
+    # Additional labels for Podsecurity and Monitoring for the Namespace
+    additional_settings:
+      # Pod Security Standards
+      # https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
+      # Possible values: Privileged, Baseline, Restricted
+      # Privileged: Unrestricted policy, providing the widest possible level of permissions. This policy allows for known privilege escalations.
+      # Baseline: Minimally restrictive policy which prevents known privilege escalations. Allows the default (minimally specified) Pod configuration.
+      # Restricted: Heavily restricted policy, following current Pod hardening best practices.
+      # Policy violations will trigger the addition of an audit annotation to the event recorded in the audit log, but are otherwise allowed.
+      podsecurity_audit: restricted
+      # Policy violations will trigger a user-facing warning, but are otherwise allowed.
+      podsecurity_warn: restricted
+      # Policy violations will cause the pod to be rejected.
+      podsecurity_enforce: restricted
+    # List of Labels that should be added to the Namespace
+    labels:
+      my_additional_label: my_label
+      another_label: another_label
+    # Configure ResourceQuotas
+    # Here are a lot of examples, typically, you do not need all of these. cpu/memory is a good start for most use cases.
+    resourceQuotas:
+      # Enable Quotas or not. You can either disable it or remove the whole block
+      enabled: false
+      # limits of Pods, CPU, Memory, storage, secrets... etc. etc.
+      # Byte values will be replace: gi -> Gi, mi -> Mi
+      pods: 4
+      cpu: 4
+      memory: 4Gi
+      ephemeral_storage: 4Gi
+      replicationcontrollers: 20
+      resourcequotas: 20
+      services: 100
+      secrets: 100
+      configmaps: 100
+      persistentvolumeclaims: 10
+      limits:
+        cpu: 4
+        memory: 4gi  # lower case will be automatically replaced
+        ephemeral_storage: 4mi  # lower case will be automatically replaced
+      requests:
+        cpu: 1
+        memory: 2Gi
+        storage: 50Gi
+        ephemeral_storage: 2Gi
+      # add here a list of your storage classes you would like to limit as well.
+      storageclasses:
+        # for example: Storageclass "bronze" has a request limit and a limit ov max. PVCs.
+        bronze.storageclass.storage.k8s.io/requests.storage: "10Gi"
+        bronze.storageclass.storage.k8s.io/persistentvolumeclaims: "10"
+    # Limit Ranges, are optional, if not set here, then default (very small ones) are used
+    limitRanges:
+      # Enable Quotas or not. You can either disable it or remove the whole block
+      enabled: false
+      pod:
+        max:
+          cpu: 4
+          memory: 4Gi
+        min:
+          cpu: 500m
+          memory: 500Mi
+      container:
+        max:
+          cpu: 4
+          memory: 4Gi
+        min:
+          cpu: 500m
+          memory: 500Mi
+        default:
+          cpu: 1
+          memory: 4Gi
+        defaultRequest:
+          cpu: 1
+          memory: 2Gi
+      pvc:
+        min:
+          storage: 1Gi
+        max:
+          storage: 20Gi
+    # Network Policies ... these are a bit more complex, when you want to keep them fully configurable.
+    # Maybe the following is too much to manage, anyway, let's start
+    # 5 default network policies will be created every time, unless you overwrite them here
+    # You can remove this whole block to have the policies created or you can select specific policies
+    # which shall be disabled.
+    # The 5 policies are:
+    #    - Allow Ingress traffic from the Ingress Controller
+    #    - Allow Monitoring to access and fetch metrics
+    #    - Allow inner namespace communication (pod to pod of the same Namespace)
+    #    - Allow Kube API Server
+    #    - Forbid ANY Egress traffic
+    # For example: I would like to disable "deny all egress" (which means the Pods can reach any external destination).
+    # default_policies:
+      # disable_allow_from_ingress: false
+      # disable_allow_from_monitoring: false
+      # disable_allow_from_same_namespace: false
+      # disable_allow_kube_apiserver: false
+      # disable_deny_all_egress: true # This default policy will not be created, while the others will be.
+    # Additional custom Network Policies
+    # I created this to be able to create Policies using a Helm chart. It might look complex but it is actually quite straight forward.
+    #
+    # 1. Define a PodsSelect (or use all pods see example 2)
+    # 2. Define Ingress rules with selectors and ports or IP addresses
+    # 3. Optionally define egress Rules
+    networkpolicies:
+        # List of NetworkPolicies to create with name and switch if active or not
+      - name: netpol1
+        active: false
+        # The PodSelect based on matchLabels. Could be empty as well
+        podSelector:
+          matchLabels:
+            app: myapplication
+            app2: myapplication2
+        # Incoming Rules, based on Port and Selectors (Pod and Namespace)
+        ingressRules:
+          - selectors:
+              - podSelector:
+                  matchLabels:
+                    app: myapplication
+                    version: '1.0'
+              - namespaceSelector:
+                  matchLabels:
+                    testnamespace: "true"
+            ports:
+              - protocol: TCP
+                port: 443
+        # Outgoing Rules, based on Port and Selectors
+        egressRules:
+          - selectors: []
+            ports:
+              - port: 2
+                protocol: UDP
+          - ports:
+              - port: 443
+                protocol: TCP
+            selectors:
+              - podSelector:
+                  matchLabels:
+                    app: myapplication
+                    version: '1.0'
+        # 2nd example
+      - name: netpol2
+        active: false
+        podSelector: {}
+        # Incoming Rules, based on ipBlock and Selectors
+        ingressRules:
+          - selectors:
+              - podSelector: {}
+              - namespaceSelector:
+                  matchLabels:
+                    testnamespace: "testnamespace"
+              - ipBlock:
+                  cidr: 127.0.0.1/24
+                  except:
+                    - 127.0.0.2/32
+            ports:
+              - protocol: TCP
+                port: 443
+    # Image Pull Secrets, are optional
+    vaultSecrets:
+      authentications:
+        - name: auth-role-1
+          role: role-1
+          mount: kubernetes
+          serviceAccount: default
+      secrets:
+        - name: secret
+          auth: auth-role-1
+          mount: kv
+          namespace: null
+          path: "path/to/secret"
+          type: "kubernetes.io/dockerconfigjson"
+          refreshAfter: 24h
+    secrets:
+      dockerconfig:
+        hostname: repo.example.com
+        auth: "base64 encoded basic auth"
+###############################
+  #  Name of the 2nd Namespace, with only Namespace creation
+  - name: my-main-app-project-2
+    # shall namespace be created of not
+    enabled: false
