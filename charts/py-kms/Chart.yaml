@@ -1,8 +1,22 @@
 apiVersion: v2
 name: py-kms
 description: |
-  py-kms is a port of node-kms created by cyrozap, which is a port of either the C#, C++, or 
-  .NET implementations of KMS Emulator.
+  py-kms is a port of node-kms created by cyrozap, which is a port of either the C#, C++, or
+  .NET implementations of KMS Emulator. Runs a KMS activation server for Microsoft products
+  with an optional web-based management GUI.
 type: application
-version: 0.1.7
-appVersion: "2025-05-28"
+version: 0.9.0
+appVersion: "v1.0.1"
+home: https://github.com/py-kms-organization/py-kms
+sources:
+  - https://github.com/py-kms-organization/py-kms
+keywords:
+  - kms
+  - microsoft
+  - activation
+  - windows
+  - office
+  - license
+maintainers:
+  - name: mithrandir1
+    url: https://github.com/mithrandir1

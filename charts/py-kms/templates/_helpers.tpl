@@ -60,3 +60,15 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the name of the PersistentVolumeClaim to use.
+Uses an existing claim when provided, otherwise derives the name from the release.
+*/}}
+{{- define "py-kms.pvcName" -}}
+{{- if .Values.persistence.existingClaim }}
+{{- .Values.persistence.existingClaim }}
+{{- else }}
+{{- printf "%s-database" .Release.Name }}
+{{- end }}
+{{- end }}

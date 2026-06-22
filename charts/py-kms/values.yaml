@@ -3,41 +3,71 @@ replicaCount: 1
 image:
   repository: ghcr.io/py-kms-organization/py-kms
   pullPolicy: IfNotPresent
-  tag: "python3@sha256:3cea625b22e5d78bfff0708b72d63c987c96109c62dc85d124a1bb803da06141"
+  tag: "v1.0.1@sha256:abbc7b4a4d57099e5c0cb63542da1035af07010c191ca553b6f7489dc2e49971"
 
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
 podAnnotations: {}
+podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# Pod Security Context — compliant with the 'restricted' Pod Security Standard
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+# Container Security Context — compliant with the 'restricted' Pod Security Standard
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
 
 persistence:
   enabled: true
-  size: 1G
+  size: 1Gi
   accessModes:
     - ReadWriteOnce
+  storageClass: ""
+  # existingClaim: ""
 
 TZ: Europe/Vienna
+
+extraEnv: []
+# - name: FOO
+#   value: bar
+# - name: SECRET
+#   valueFrom:
+#     secretKeyRef:
+#       name: my-secret
+#       key: my-key
+
+extraVolumes: []
+extraVolumeMounts: []
 
 service:
   kms:
     type: ClusterIP
     port: 1688
     nodePort: 31688
+    annotations: {}
   gui:
     type: ClusterIP
     port: 8080
+    annotations: {}
 
 ingress:
   enabled: false
@@ -57,14 +87,91 @@ ingress:
 
 resources:
   limits:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 200m
+    memory: 256Mi
   requests:
     cpu: 100m
     memory: 128Mi
+
+livenessProbe:
+  tcpSocket:
+    port: kms
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+startupProbe:
+  tcpSocket:
+    port: kms
+  failureThreshold: 30
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+  # Note: HPA requires a ReadWriteMany storage class or persistence disabled
+  # when running more than one replica.
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+networkPolicy:
+  enabled: false
+  # Allow ingress to KMS and GUI ports from all sources
+  ingressRules:
+    - ports:
+        - port: 1688
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
+  # Allow egress to DNS only; extend for external license lookups if needed
+  egressRules:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+# Spread replicas across nodes (requires replicaCount > 1)
+topologySpreadConstraints: []
+# - maxSkew: 1
+#   topologyKey: kubernetes.io/hostname
+#   whenUnsatisfiable: DoNotSchedule
+#   labelSelector:
+#     matchLabels: {}
 
 nodeSelector: {}
 
 tolerations: []
 
+# Soft pod anti-affinity example (spread replicas across nodes):
+# affinity:
+#   podAntiAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#       - weight: 100
+#         podAffinityTerm:
+#           labelSelector:
+#             matchExpressions:
+#               - key: app.kubernetes.io/name
+#                 operator: In
+#                 values:
+#                   - py-kms
+#           topologyKey: kubernetes.io/hostname
 affinity: {}
