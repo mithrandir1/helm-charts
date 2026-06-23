@@ -8,18 +8,60 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Package and push changed charts
+        run: |
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REGISTRY="ghcr.io/${REPO_OWNER}/helm-charts"
+
+          git fetch --tags
+
+          # Find charts that changed since last release tag, or all charts on first run
+          CHANGED_CHARTS=()
+          for chart in charts/*/; do
+            chart_name=$(basename "$chart")
+            chart_version=$(grep '^version:' "${chart}/Chart.yaml" | awk '{print $2}')
+            tag="${chart_name}-${chart_version}"
+
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "Skipping ${tag} — already released"
+            else
+              CHANGED_CHARTS+=("$chart")
+            fi
+          done
+
+          if [ ${#CHANGED_CHARTS[@]} -eq 0 ]; then
+            echo "No new chart versions to release."
+            exit 0
+          fi
+
+          for chart in "${CHANGED_CHARTS[@]}"; do
+            chart_name=$(basename "$chart")
+            chart_version=$(grep '^version:' "${chart}/Chart.yaml" | awk '{print $2}')
+
+            echo "Packaging ${chart_name}-${chart_version}..."
+            helm dependency update "$chart" 2>/dev/null || true
+            helm package "$chart" --destination .cr-release-packages/
+
+            echo "Pushing ${chart_name}-${chart_version} to ${REGISTRY}..."
+            helm push ".cr-release-packages/${chart_name}-${chart_version}.tgz" "oci://${REGISTRY}"
+
+            echo "Tagging ${chart_name}-${chart_version}..."
+            git tag "${chart_name}-${chart_version}"
+          done
+
+          git push origin --tags
