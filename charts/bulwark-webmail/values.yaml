@@ -1,0 +1,245 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/bulwarkmail/webmail
+  pullPolicy: IfNotPresent
+  tag: "1.7.4"
+  # digest: ""  # pin for immutable deploys, e.g. sha256:abc123...
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# Pod Security Context — compliant with the 'restricted' Pod Security Standard
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001    # nextjs user baked into the image
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security Context — compliant with the 'restricted' Pod Security Standard
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Application configuration (rendered into a ConfigMap)
+config:
+  # Required: JMAP server endpoint (e.g. Stalwart Mail Server)
+  jmapServerUrl: "https://mail.example.com/jmap"
+  appName: "Bulwark Webmail"
+  logLevel: "info"
+  # Optional: OAuth2/OIDC SSO
+  oauthIssuerUrl: ""
+  TZ: Europe/Vienna
+
+# Secret values — sensitive configuration
+secret:
+  # Set create: true to render a Secret from the values below.
+  # Set create: false and provide existingSecret to reference an externally managed Secret.
+  create: true
+  existingSecret: ""
+  # SESSION_SECRET: a random 32+ character string for session encryption (required)
+  sessionSecret: ""
+  # OAuth2/OIDC credentials (optional, only needed for SSO)
+  oauthClientId: ""
+  oauthClientSecret: ""
+
+# Persistent storage for application data.
+# Each volume can be independently enabled. HPA with more than 1 replica
+# requires ReadWriteMany storage classes or persistence disabled.
+persistence:
+  settings:
+    enabled: true
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    # existingClaim: ""
+  admin:
+    enabled: true
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    # existingClaim: ""
+  adminState:
+    enabled: true
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    # existingClaim: ""
+  telemetry:
+    enabled: false
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    # existingClaim: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations: {}
+
+# Classic Kubernetes Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: webmail.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: webmail-tls
+  #    hosts:
+  #      - webmail.example.com
+
+# Gateway API HTTPRoute (mutually exclusive with ingress in most setups)
+gateway:
+  enabled: false
+  annotations: {}
+  parentRefs:
+    - name: prod-gateway
+      namespace: gateway-system
+      sectionName: https
+  hostnames:
+    - webmail.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+startupProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  failureThreshold: 30
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+  # Note: HPA with replicaCount > 1 requires ReadWriteMany storage
+  # or all persistence volumes disabled.
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+networkPolicy:
+  enabled: false
+  # Allow ingress to the webmail port from any source
+  ingressRules:
+    - ports:
+        - port: 3000
+          protocol: TCP
+  # Allow egress to DNS, HTTP/HTTPS (for JMAP), and SMTP/IMAP if direct access is needed
+  egressRules:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+
+# Spread replicas across nodes (requires replicaCount > 1)
+topologySpreadConstraints: []
+# - maxSkew: 1
+#   topologyKey: kubernetes.io/hostname
+#   whenUnsatisfiable: DoNotSchedule
+#   labelSelector:
+#     matchLabels: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+# Soft pod anti-affinity example (spread replicas across nodes):
+# affinity:
+#   podAntiAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#       - weight: 100
+#         podAffinityTerm:
+#           labelSelector:
+#             matchExpressions:
+#               - key: app.kubernetes.io/name
+#                 operator: In
+#                 values:
+#                   - bulwark-webmail
+#           topologyKey: kubernetes.io/hostname
+affinity: {}
+
+extraEnv: []
+# - name: FOO
+#   value: bar
+# - name: SECRET_KEY
+#   valueFrom:
+#     secretKeyRef:
+#       name: my-secret
+#       key: my-key
+
+extraVolumes: []
+extraVolumeMounts: []
+
+# Deploy arbitrary additional Kubernetes objects alongside the chart.
+# Values are rendered as templates so you can use {{ .Release.Name }}, etc.
+extraDeploy: []
+# - apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: "{{ .Release.Name }}-extra"
+#   data:
+#     key: value

@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bulwark-webmail.fullname" . }}
+  labels:
+    {{- include "bulwark-webmail.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bulwark-webmail.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "bulwark-webmail.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bulwark-webmail.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "bulwark-webmail.fullname" . }}
+            {{- if or .Values.secret.create .Values.secret.existingSecret }}
+            - secretRef:
+                name: {{ include "bulwark-webmail.secretName" . }}
+            {{- end }}
+          {{- with .Values.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: nextjs-cache
+              mountPath: /app/.next/cache
+            {{- if .Values.persistence.settings.enabled }}
+            - name: settings
+              mountPath: /app/data/settings
+            {{- end }}
+            {{- if .Values.persistence.admin.enabled }}
+            - name: admin
+              mountPath: /app/data/admin
+            {{- end }}
+            {{- if .Values.persistence.adminState.enabled }}
+            - name: admin-state
+              mountPath: /app/data/admin-state
+            {{- end }}
+            {{- if .Values.persistence.telemetry.enabled }}
+            - name: telemetry
+              mountPath: /app/data/telemetry
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: nextjs-cache
+          emptyDir: {}
+        {{- if .Values.persistence.settings.enabled }}
+        - name: settings
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.settings.existingClaim }}{{ .Values.persistence.settings.existingClaim }}{{ else }}{{ printf "%s-settings" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
+        {{- end }}
+        {{- if .Values.persistence.admin.enabled }}
+        - name: admin
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.admin.existingClaim }}{{ .Values.persistence.admin.existingClaim }}{{ else }}{{ printf "%s-admin" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
+        {{- end }}
+        {{- if .Values.persistence.adminState.enabled }}
+        - name: admin-state
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.adminState.existingClaim }}{{ .Values.persistence.adminState.existingClaim }}{{ else }}{{ printf "%s-admin-state" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
+        {{- end }}
+        {{- if .Values.persistence.telemetry.enabled }}
+        - name: telemetry
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.telemetry.existingClaim }}{{ .Values.persistence.telemetry.existingClaim }}{{ else }}{{ printf "%s-telemetry" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

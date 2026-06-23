@@ -1,0 +1,444 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "bulwark-webmail Helm Chart Values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of pod replicas"
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "description": "Container image repository" },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "description": "Image pull policy"
+        },
+        "tag": { "type": "string", "description": "Image tag" },
+        "digest": { "type": "string", "description": "Optional SHA256 digest for immutable image pinning" }
+      },
+      "required": ["repository", "pullPolicy", "tag"]
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "description": "Image pull secrets for private registries",
+      "items": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "required": ["name"]
+      }
+    },
+    "nameOverride": { "type": "string", "description": "Override the chart name" },
+    "fullnameOverride": { "type": "string", "description": "Override the full release name" },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": { "type": "boolean", "description": "Create a ServiceAccount" },
+        "annotations": { "type": "object", "description": "Annotations to add to the ServiceAccount" },
+        "name": { "type": "string", "description": "Name override; defaults to fullname when empty" }
+      }
+    },
+    "podAnnotations": {
+      "type": "object",
+      "description": "Annotations to add to the pod"
+    },
+    "podLabels": {
+      "type": "object",
+      "description": "Extra labels to add to the pod"
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "description": "Pod-level security context. Defaults comply with the restricted Pod Security Standard.",
+      "properties": {
+        "runAsNonRoot": { "type": "boolean" },
+        "runAsUser": { "type": "integer", "minimum": 0 },
+        "runAsGroup": { "type": "integer", "minimum": 0 },
+        "fsGroup": { "type": "integer", "minimum": 0 },
+        "fsGroupChangePolicy": { "type": "string", "enum": ["Always", "OnRootMismatch"] },
+        "seccompProfile": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["RuntimeDefault", "Localhost", "Unconfined"]
+            },
+            "localhostProfile": { "type": "string" }
+          }
+        },
+        "supplementalGroups": {
+          "type": "array",
+          "items": { "type": "integer" }
+        },
+        "sysctls": { "type": "array" }
+      }
+    },
+    "securityContext": {
+      "type": "object",
+      "description": "Container-level security context. Defaults comply with the restricted Pod Security Standard.",
+      "properties": {
+        "allowPrivilegeEscalation": { "type": "boolean" },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "drop": { "type": "array", "items": { "type": "string" } },
+            "add": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "readOnlyRootFilesystem": { "type": "boolean" },
+        "runAsNonRoot": { "type": "boolean" },
+        "runAsUser": { "type": "integer", "minimum": 0 },
+        "runAsGroup": { "type": "integer", "minimum": 0 },
+        "seccompProfile": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["RuntimeDefault", "Localhost", "Unconfined"]
+            },
+            "localhostProfile": { "type": "string" }
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Non-sensitive application configuration rendered into a ConfigMap",
+      "properties": {
+        "jmapServerUrl": {
+          "type": "string",
+          "description": "JMAP server endpoint URL (required)"
+        },
+        "appName": {
+          "type": "string",
+          "description": "Display name shown in the webmail UI"
+        },
+        "logLevel": {
+          "type": "string",
+          "enum": ["error", "warn", "info", "debug"],
+          "description": "Application log verbosity"
+        },
+        "oauthIssuerUrl": {
+          "type": "string",
+          "description": "OAuth2/OIDC issuer URL for SSO (optional)"
+        },
+        "TZ": {
+          "type": "string",
+          "description": "Container timezone (IANA tz database name)"
+        }
+      },
+      "required": ["jmapServerUrl"]
+    },
+    "secret": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Sensitive application credentials",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Create a Secret from the values below"
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "Name of an existing Secret to use instead of creating one"
+        },
+        "sessionSecret": {
+          "type": "string",
+          "description": "SESSION_SECRET — a random 32+ character string for session encryption"
+        },
+        "oauthClientId": {
+          "type": "string",
+          "description": "OAuth2/OIDC client ID (optional, only for SSO)"
+        },
+        "oauthClientSecret": {
+          "type": "string",
+          "description": "OAuth2/OIDC client secret (optional, only for SSO)"
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Persistent storage for application data under /app/data/",
+      "properties": {
+        "settings": { "$ref": "#/$defs/persistenceVolume" },
+        "admin": { "$ref": "#/$defs/persistenceVolume" },
+        "adminState": { "$ref": "#/$defs/persistenceVolume" },
+        "telemetry": { "$ref": "#/$defs/persistenceVolume" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Kubernetes Service configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer"],
+          "description": "Service type"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Service port"
+        },
+        "targetPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Container port to route traffic to"
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Annotations to add to the Service"
+        }
+      },
+      "required": ["type", "port"]
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Classic Kubernetes Ingress configuration",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Enable Ingress" },
+        "className": { "type": "string", "description": "IngressClass name" },
+        "annotations": { "type": "object", "description": "Ingress annotations" },
+        "hosts": {
+          "type": "array",
+          "description": "Ingress host rules",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": { "type": "string" },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "pathType": {
+                      "type": "string",
+                      "enum": ["ImplementationSpecific", "Exact", "Prefix"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tls": {
+          "type": "array",
+          "description": "TLS configuration",
+          "items": {
+            "type": "object",
+            "properties": {
+              "secretName": { "type": "string" },
+              "hosts": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "required": ["enabled"]
+    },
+    "gateway": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Gateway API HTTPRoute configuration (requires Gateway API CRDs)",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Enable HTTPRoute" },
+        "annotations": { "type": "object", "description": "HTTPRoute annotations" },
+        "parentRefs": {
+          "type": "array",
+          "description": "Gateway parent references",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "namespace": { "type": "string" },
+              "sectionName": { "type": "string" },
+              "port": { "type": "integer" }
+            },
+            "required": ["name"]
+          }
+        },
+        "hostnames": {
+          "type": "array",
+          "description": "Hostnames for the HTTPRoute",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["enabled"]
+    },
+    "resources": {
+      "type": "object",
+      "description": "CPU and memory resource requests and limits",
+      "properties": {
+        "limits": {
+          "type": "object",
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        }
+      }
+    },
+    "livenessProbe": {
+      "type": "object",
+      "description": "Liveness probe configuration. Set to {} to disable."
+    },
+    "readinessProbe": {
+      "type": "object",
+      "description": "Readiness probe configuration. Set to {} to disable."
+    },
+    "startupProbe": {
+      "type": "object",
+      "description": "Startup probe configuration. Set to {} to disable."
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "HorizontalPodAutoscaler (autoscaling/v2) configuration",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Enable HPA" },
+        "minReplicas": { "type": "integer", "minimum": 1, "description": "Minimum replica count" },
+        "maxReplicas": { "type": "integer", "minimum": 1, "description": "Maximum replica count" },
+        "targetCPUUtilizationPercentage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Target average CPU utilization percentage"
+        },
+        "targetMemoryUtilizationPercentage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Target average memory utilization percentage"
+        }
+      },
+      "required": ["enabled"]
+    },
+    "podDisruptionBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "PodDisruptionBudget configuration",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Enable PDB" },
+        "minAvailable": {
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string" }],
+          "description": "Minimum available pods (integer or percentage string)"
+        },
+        "maxUnavailable": {
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string" }],
+          "description": "Maximum unavailable pods (integer or percentage string)"
+        }
+      },
+      "required": ["enabled"]
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "NetworkPolicy configuration",
+      "properties": {
+        "enabled": { "type": "boolean", "description": "Enable NetworkPolicy" },
+        "ingressRules": {
+          "type": "array",
+          "description": "NetworkPolicy ingress rules",
+          "items": { "type": "object" }
+        },
+        "egressRules": {
+          "type": "array",
+          "description": "NetworkPolicy egress rules",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["enabled"]
+    },
+    "topologySpreadConstraints": {
+      "type": "array",
+      "description": "Topology spread constraints for pod scheduling",
+      "items": { "type": "object" }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "description": "Node selector labels"
+    },
+    "tolerations": {
+      "type": "array",
+      "description": "Pod tolerations",
+      "items": { "type": "object" }
+    },
+    "affinity": {
+      "type": "object",
+      "description": "Pod affinity and anti-affinity rules"
+    },
+    "extraEnv": {
+      "type": "array",
+      "description": "Extra environment variables injected into the container",
+      "items": { "type": "object" }
+    },
+    "extraVolumes": {
+      "type": "array",
+      "description": "Extra volumes to add to the pod spec",
+      "items": { "type": "object" }
+    },
+    "extraVolumeMounts": {
+      "type": "array",
+      "description": "Extra volume mounts to add to the container",
+      "items": { "type": "object" }
+    },
+    "extraDeploy": {
+      "type": "array",
+      "description": "Extra Kubernetes objects to deploy alongside the chart (rendered as templates)",
+      "items": { "type": "object" }
+    }
+  },
+  "$defs": {
+    "persistenceVolume": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable persistent storage for this volume"
+        },
+        "size": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$",
+          "description": "PVC size (e.g. 1Gi)"
+        },
+        "accessModes": {
+          "type": "array",
+          "description": "PVC access modes",
+          "items": {
+            "type": "string",
+            "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany", "ReadWriteOncePod"]
+          },
+          "minItems": 1
+        },
+        "storageClass": {
+          "type": "string",
+          "description": "Storage class name. Use \"-\" to explicitly set storageClassName: \"\""
+        },
+        "existingClaim": {
+          "type": "string",
+          "description": "Name of an existing PVC to use instead of creating a new one"
+        }
+      },
+      "required": ["enabled"]
+    }
+  }
+}

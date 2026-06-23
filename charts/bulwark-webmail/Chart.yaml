@@ -1,0 +1,22 @@
+apiVersion: v2
+name: bulwark-webmail
+description: |
+  Bulwark Webmail is a modern, self-hosted webmail suite built on Next.js and the JMAP protocol,
+  designed for use with Stalwart Mail Server. It provides mail, calendar, contacts, and file
+  management in a single application.
+type: application
+version: 0.1.0
+appVersion: "1.7.4"
+home: https://github.com/bulwarkmail/webmail
+sources:
+  - https://github.com/bulwarkmail/webmail
+keywords:
+  - webmail
+  - jmap
+  - stalwart
+  - mail
+  - calendar
+  - nextjs
+maintainers:
+  - name: mithrandir1
+    url: https://github.com/mithrandir1

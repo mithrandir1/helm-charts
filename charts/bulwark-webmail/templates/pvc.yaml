@@ -1,0 +1,31 @@
+{{- $root := . -}}
+{{- range $volName, $volCfg := .Values.persistence -}}
+{{- if $volCfg.enabled -}}
+{{- $volKey := $volName | kebabcase -}}
+{{- if not $volCfg.existingClaim }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ printf "%s-%s" $root.Release.Name $volKey | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "bulwark-webmail.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $volKey }}
+spec:
+  accessModes:
+    {{- range $volCfg.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ $volCfg.size | quote }}
+  {{- if $volCfg.storageClass }}
+  {{- if (eq "-" $volCfg.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ $volCfg.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
