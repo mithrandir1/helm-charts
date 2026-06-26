@@ -1,9 +1,31 @@
 {{- range $key, $value := .Values.namespaces }}
 {{ if eq ( .enabled | toString) "true" }}
 {{ if and .vaultSecrets .vaultSecrets.authentications }}
+{{- $operator := default "vso" .vaultSecrets.operator }}
 {{- range .vaultSecrets.authentications }}
-{{- $name := .name | required "name is required for VaultAuth." }}
+{{- $name := .name | required "name is required for VaultAuth/SecretStore." }}
 ---
+{{- if eq $operator "eso" }}
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: {{ .name | replace "_" "-" | quote }}
+  namespace: {{ $value.name | replace "_" "-" | quote }}
+spec:
+  provider:
+    vault:
+      server: {{ required "vaultAddress is required for SecretStore (ESO)." .vaultAddress | quote }}
+      version: {{ default "v2" .kvVersion | quote }}
+      {{- if .namespace }}
+      namespace: {{ .namespace | quote }}
+      {{- end }}
+      auth:
+        kubernetes:
+          mountPath: {{ required "mount is required for SecretStore." .mount | quote }}
+          role: {{ required "role is required for SecretStore." .role | quote }}
+          serviceAccountRef:
+            name: {{ default "default" .serviceAccount | quote }}
+{{- else }}
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
 metadata:
@@ -15,6 +37,10 @@ spec:
   kubernetes:
     role: {{ required "role is required for VaultAuth." .role | quote }}
     serviceAccount: {{ default "default" .serviceAccount | quote }}
+    audiences:
+      - {{ .mount }}
+      - "vault"
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

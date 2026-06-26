@@ -188,6 +188,12 @@ namespaces:
                 port: 443
     # Image Pull Secrets, are optional
     vaultSecrets:
+      # Operator to use for secret management. Defaults to "vso" (Vault Secrets Operator).
+      # Set to "eso" to use External Secrets Operator instead.
+      # operator: vso
+      #
+      # --- VSO (Vault Secrets Operator) example ---
+      # authentications create VaultAuth CRDs; secrets create VaultStaticSecret CRDs.
       authentications:
         - name: auth-role-1
           role: role-1
@@ -199,8 +205,28 @@ namespaces:
           mount: kv
           namespace: null
           path: "path/to/secret"
-          type: "kubernetes.io/dockerconfigjson"
+          type: kv-v2          # Vault KV engine version: kv-v1 or kv-v2
+          secretType: Opaque   # Kubernetes secret type, e.g. Opaque or kubernetes.io/dockerconfigjson
           refreshAfter: 24h
+      #
+      # --- ESO (External Secrets Operator) example ---
+      # operator: eso
+      # authentications create SecretStore CRDs; secrets create ExternalSecret CRDs.
+      # authentications:
+      #   - name: auth-role-1
+      #     role: role-1
+      #     mount: kubernetes           # kubernetes auth method mount path
+      #     serviceAccount: default
+      #     vaultAddress: "https://vault:8200"  # required for ESO
+      #     kvVersion: "v2"             # optional, defaults to v2
+      #     namespace: ""               # optional Vault Enterprise namespace
+      # secrets:
+      #   - name: secret
+      #     auth: auth-role-1
+      #     mount: kv                   # KV engine mount name
+      #     path: "path/to/secret"      # path within the KV mount
+      #     secretType: Opaque          # Kubernetes secret type
+      #     refreshAfter: 1h
     secrets:
       dockerconfig:
         hostname: repo.example.com

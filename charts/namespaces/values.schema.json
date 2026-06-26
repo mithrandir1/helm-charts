@@ -1,0 +1,397 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "namespaces chart values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "application_gitops_namespace": {
+          "type": "string",
+          "default": "argocd",
+          "description": "Namespace where ArgoCD is deployed."
+        },
+        "ingress_controller_range": {
+          "type": ["string", "null"],
+          "description": "Comma-separated CIDR ranges for the ingress controller. When empty a namespaceSelector is used instead."
+        },
+        "tshirt_sizes": {
+          "type": "array",
+          "description": "Predefined quota/limitRange profiles referenced by namespaces[].project_size.",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "quota": { "$ref": "#/definitions/quotaSpec" },
+              "limitRanges": { "$ref": "#/definitions/limitRangeSpec" }
+            }
+          }
+        }
+      }
+    },
+    "namespaces": {
+      "type": "array",
+      "description": "List of namespaces to manage.",
+      "items": { "$ref": "#/definitions/namespaceItem" }
+    }
+  },
+  "definitions": {
+    "namespaceItem": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the namespace."
+        },
+        "enabled": {
+          "type": ["boolean", "string"],
+          "description": "Whether to create the namespace and its resources."
+        },
+        "project_size": {
+          "type": "string",
+          "description": "Reference to a global.tshirt_sizes[].name to apply predefined quotas and limits."
+        },
+        "labels": {
+          "type": "object",
+          "description": "Additional labels to add to the namespace.",
+          "additionalProperties": { "type": "string" }
+        },
+        "admin_group": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": ["boolean", "string"] },
+            "group_name": {
+              "type": "string",
+              "description": "External group name (e.g. LDAP/OIDC group)."
+            },
+            "users": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "clusterrole": {
+              "type": "string",
+              "default": "admin",
+              "description": "ClusterRole to bind. Defaults to 'admin'."
+            }
+          }
+        },
+        "additional_settings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "podsecurity_audit": {
+              "type": "string",
+              "enum": ["Privileged", "Baseline", "Restricted"],
+              "description": "Pod Security Standards audit level."
+            },
+            "podsecurity_warn": {
+              "type": "string",
+              "enum": ["Privileged", "Baseline", "Restricted"],
+              "description": "Pod Security Standards warn level."
+            },
+            "podsecurity_enforce": {
+              "type": "string",
+              "enum": ["Privileged", "Baseline", "Restricted"],
+              "description": "Pod Security Standards enforce level."
+            }
+          }
+        },
+        "resourceQuotas": {
+          "allOf": [
+            { "$ref": "#/definitions/quotaSpec" },
+            {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": ["boolean", "string"] }
+              }
+            }
+          ]
+        },
+        "limitRanges": {
+          "allOf": [
+            { "$ref": "#/definitions/limitRangeSpec" },
+            {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": ["boolean", "string"] }
+              }
+            }
+          ]
+        },
+        "default_policies": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "disable_allow_from_ingress": { "type": ["boolean", "string"] },
+            "disable_allow_from_monitoring": { "type": ["boolean", "string"] },
+            "disable_allow_from_same_namespace": { "type": ["boolean", "string"] },
+            "disable_allow_kube_apiserver": { "type": ["boolean", "string"] },
+            "disable_deny_all_egress": { "type": ["boolean", "string"] }
+          }
+        },
+        "networkpolicies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "active": { "type": ["boolean", "string"] },
+              "podSelector": {
+                "type": "object",
+                "properties": {
+                  "matchLabels": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                  }
+                }
+              },
+              "ingressRules": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/networkPolicyRule" }
+              },
+              "egressRules": {
+                "type": "array",
+                "items": { "$ref": "#/definitions/networkPolicyRule" }
+              }
+            }
+          }
+        },
+        "vaultSecrets": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "operator": {
+              "type": "string",
+              "enum": ["vso", "eso"],
+              "default": "vso",
+              "description": "Secret operator backend. 'vso' = Vault Secrets Operator, 'eso' = External Secrets Operator."
+            },
+            "authentications": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/vaultAuthentication" }
+            },
+            "secrets": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/vaultSecret" }
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "opaque": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "data"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "data": {
+                    "type": "object",
+                    "description": "Key-value pairs; values are base64-encoded automatically.",
+                    "additionalProperties": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "dockerconfig": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "hostname", "auth"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "hostname": { "type": "string" },
+                  "auth": {
+                    "type": "string",
+                    "description": "Base64-encoded 'user:password' string."
+                  }
+                }
+              }
+            },
+            "tls": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "cert": { "type": "string", "description": "PEM certificate; base64-encoded automatically." },
+                  "key": { "type": "string", "description": "PEM private key; base64-encoded automatically." },
+                  "ca": { "type": "string", "description": "PEM CA certificate; base64-encoded automatically." }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "quotaSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": ["boolean", "string"] },
+        "pods": { "type": ["integer", "string"] },
+        "cpu": { "type": ["integer", "string"] },
+        "memory": { "type": "string" },
+        "ephemeral_storage": { "type": "string" },
+        "replicationcontrollers": { "type": ["integer", "string"] },
+        "resourcequotas": { "type": ["integer", "string"] },
+        "services": { "type": ["integer", "string"] },
+        "secrets": { "type": ["integer", "string"] },
+        "configmaps": { "type": ["integer", "string"] },
+        "persistentvolumeclaims": { "type": ["integer", "string"] },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpu": { "type": ["integer", "string"] },
+            "memory": { "type": "string" },
+            "ephemeral_storage": { "type": "string" }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpu": { "type": ["integer", "string"] },
+            "memory": { "type": "string" },
+            "storage": { "type": "string" },
+            "ephemeral_storage": { "type": "string" }
+          }
+        },
+        "storageclasses": {
+          "type": "object",
+          "description": "StorageClass-scoped quota keys, e.g. 'bronze.storageclass.storage.k8s.io/requests.storage'.",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "limitRangeSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": ["boolean", "string"] },
+        "pod": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max": { "$ref": "#/definitions/cpuMemory" },
+            "min": { "$ref": "#/definitions/cpuMemory" }
+          }
+        },
+        "container": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max": { "$ref": "#/definitions/cpuMemory" },
+            "min": { "$ref": "#/definitions/cpuMemory" },
+            "default": { "$ref": "#/definitions/cpuMemory" },
+            "defaultRequest": { "$ref": "#/definitions/cpuMemory" }
+          }
+        },
+        "pvc": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": { "storage": { "type": "string" } }
+            },
+            "max": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": { "storage": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "cpuMemory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cpu": { "type": ["integer", "string"] },
+        "memory": { "type": "string" }
+      }
+    },
+    "networkPolicyRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "selectors": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "protocol": {
+                "type": "string",
+                "enum": ["TCP", "UDP", "SCTP"]
+              },
+              "port": { "type": ["integer", "string"] }
+            }
+          }
+        }
+      }
+    },
+    "vaultAuthentication": {
+      "type": "object",
+      "required": ["name", "role", "mount"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "mount": { "type": "string" },
+        "serviceAccount": { "type": "string", "default": "default" },
+        "vaultAddress": { "type": "string", "description": "Required for ESO." },
+        "kvVersion": { "type": "string", "enum": ["v1", "v2"], "description": "ESO KV engine version." },
+        "namespace": { "type": "string", "description": "Vault Enterprise namespace (ESO)." }
+      }
+    },
+    "vaultSecret": {
+      "type": "object",
+      "required": ["name", "auth", "mount", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "auth": { "type": "string", "description": "Reference to an authentication resource name." },
+        "mount": { "type": "string" },
+        "path": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["kv-v1", "kv-v2"],
+          "description": "Vault KV engine version (VSO only)."
+        },
+        "secretType": {
+          "type": "string",
+          "description": "Kubernetes Secret type, e.g. Opaque or kubernetes.io/dockerconfigjson."
+        },
+        "refreshAfter": { "type": "string", "description": "Sync interval, e.g. '24h' or '3600s'." },
+        "namespace": { "type": "string", "description": "Vault Enterprise namespace (VSO only)." },
+        "transformation": {
+          "type": "object",
+          "description": "VSO transformation configuration."
+        }
+      }
+    }
+  }
+}
