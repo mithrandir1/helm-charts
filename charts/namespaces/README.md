@@ -51,9 +51,9 @@ Sets Pod Security Standards labels on the namespace.
 
 | Parameter | Description | Values |
 |-----------|-------------|--------|
-| `additional_settings.podsecurity_audit` | Audit mode PSS level | `Privileged`, `Baseline`, `Restricted` |
-| `additional_settings.podsecurity_warn` | Warn mode PSS level | `Privileged`, `Baseline`, `Restricted` |
-| `additional_settings.podsecurity_enforce` | Enforce mode PSS level | `Privileged`, `Baseline`, `Restricted` |
+| `additional_settings.podsecurity_audit` | Audit mode PSS level | `privileged`, `baseline`, `restricted` |
+| `additional_settings.podsecurity_warn` | Warn mode PSS level | `privileged`, `baseline`, `restricted` |
+| `additional_settings.podsecurity_enforce` | Enforce mode PSS level | `privileged`, `baseline`, `restricted` |
 
 #### Resource Quotas (`resourceQuotas`)
 

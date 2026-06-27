@@ -34,10 +34,10 @@ namespaces:
     additional_settings:
       # Pod Security Standards
       # https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
-      # Possible values: Privileged, Baseline, Restricted
-      # Privileged: Unrestricted policy, providing the widest possible level of permissions. This policy allows for known privilege escalations.
-      # Baseline: Minimally restrictive policy which prevents known privilege escalations. Allows the default (minimally specified) Pod configuration.
-      # Restricted: Heavily restricted policy, following current Pod hardening best practices.
+      # Possible values: privileged, baseline, restricted
+      # privileged: Unrestricted policy, providing the widest possible level of permissions. This policy allows for known privilege escalations.
+      # baseline: Minimally restrictive policy which prevents known privilege escalations. Allows the default (minimally specified) Pod configuration.
+      # restricted: Heavily restricted policy, following current Pod hardening best practices.
       # Policy violations will trigger the addition of an audit annotation to the event recorded in the audit log, but are otherwise allowed.
       podsecurity_audit: restricted
       # Policy violations will trigger a user-facing warning, but are otherwise allowed.

@@ -88,17 +88,17 @@
           "properties": {
             "podsecurity_audit": {
               "type": "string",
-              "enum": ["Privileged", "Baseline", "Restricted"],
+              "enum": ["privileged", "baseline", "restricted"],
               "description": "Pod Security Standards audit level."
             },
             "podsecurity_warn": {
               "type": "string",
-              "enum": ["Privileged", "Baseline", "Restricted"],
+              "enum": ["privileged", "baseline", "restricted"],
               "description": "Pod Security Standards warn level."
             },
             "podsecurity_enforce": {
               "type": "string",
-              "enum": ["Privileged", "Baseline", "Restricted"],
+              "enum": ["privileged", "baseline", "restricted"],
               "description": "Pod Security Standards enforce level."
             }
           }
