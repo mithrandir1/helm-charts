@@ -25,6 +25,9 @@ spec:
           role: {{ required "role is required for SecretStore." .role | quote }}
           serviceAccountRef:
             name: {{ default "default" .serviceAccount | quote }}
+            audiences:
+              - {{ .mount }}
+              - "vault"
 {{- else }}
 apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultAuth
