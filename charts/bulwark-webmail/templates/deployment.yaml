@@ -68,21 +68,9 @@ spec:
               mountPath: /tmp
             - name: nextjs-cache
               mountPath: /app/.next/cache
-            {{- if .Values.persistence.settings.enabled }}
-            - name: settings
-              mountPath: /app/data/settings
-            {{- end }}
-            {{- if .Values.persistence.admin.enabled }}
-            - name: admin
-              mountPath: /app/data/admin
-            {{- end }}
-            {{- if .Values.persistence.adminState.enabled }}
-            - name: admin-state
-              mountPath: /app/data/admin-state
-            {{- end }}
-            {{- if .Values.persistence.telemetry.enabled }}
-            - name: telemetry
-              mountPath: /app/data/telemetry
+            {{- if .Values.persistence.data.enabled }}
+            - name: data
+              mountPath: /app/data
             {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
@@ -94,25 +82,10 @@ spec:
           emptyDir: {}
         - name: nextjs-cache
           emptyDir: {}
-        {{- if .Values.persistence.settings.enabled }}
-        - name: settings
+        {{- if .Values.persistence.data.enabled }}
+        - name: data
           persistentVolumeClaim:
-            claimName: {{ if .Values.persistence.settings.existingClaim }}{{ .Values.persistence.settings.existingClaim }}{{ else }}{{ printf "%s-settings" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
-        {{- end }}
-        {{- if .Values.persistence.admin.enabled }}
-        - name: admin
-          persistentVolumeClaim:
-            claimName: {{ if .Values.persistence.admin.existingClaim }}{{ .Values.persistence.admin.existingClaim }}{{ else }}{{ printf "%s-admin" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
-        {{- end }}
-        {{- if .Values.persistence.adminState.enabled }}
-        - name: admin-state
-          persistentVolumeClaim:
-            claimName: {{ if .Values.persistence.adminState.existingClaim }}{{ .Values.persistence.adminState.existingClaim }}{{ else }}{{ printf "%s-admin-state" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
-        {{- end }}
-        {{- if .Values.persistence.telemetry.enabled }}
-        - name: telemetry
-          persistentVolumeClaim:
-            claimName: {{ if .Values.persistence.telemetry.existingClaim }}{{ .Values.persistence.telemetry.existingClaim }}{{ else }}{{ printf "%s-telemetry" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
+            claimName: {{ if .Values.persistence.data.existingClaim }}{{ .Values.persistence.data.existingClaim }}{{ else }}{{ printf "%s-data" .Release.Name | trunc 63 | trimSuffix "-" }}{{ end }}
         {{- end }}
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}

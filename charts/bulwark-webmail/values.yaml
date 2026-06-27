@@ -59,33 +59,11 @@ secret:
   oauthClientId: ""
   oauthClientSecret: ""
 
-# Persistent storage for application data.
-# Each volume can be independently enabled. HPA with more than 1 replica
-# requires ReadWriteMany storage classes or persistence disabled.
+# Persistent storage for application data mounted at /app/data.
+# HPA with more than 1 replica requires a ReadWriteMany storage class.
 persistence:
-  settings:
+  data:
     enabled: true
-    size: 1Gi
-    accessModes:
-      - ReadWriteOnce
-    storageClass: ""
-    # existingClaim: ""
-  admin:
-    enabled: true
-    size: 1Gi
-    accessModes:
-      - ReadWriteOnce
-    storageClass: ""
-    # existingClaim: ""
-  adminState:
-    enabled: true
-    size: 1Gi
-    accessModes:
-      - ReadWriteOnce
-    storageClass: ""
-    # existingClaim: ""
-  telemetry:
-    enabled: false
     size: 1Gi
     accessModes:
       - ReadWriteOnce

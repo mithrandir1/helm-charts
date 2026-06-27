@@ -165,12 +165,9 @@
     "persistence": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Persistent storage for application data under /app/data/",
+      "description": "Persistent storage for application data mounted at /app/data",
       "properties": {
-        "settings": { "$ref": "#/$defs/persistenceVolume" },
-        "admin": { "$ref": "#/$defs/persistenceVolume" },
-        "adminState": { "$ref": "#/$defs/persistenceVolume" },
-        "telemetry": { "$ref": "#/$defs/persistenceVolume" }
+        "data": { "$ref": "#/$defs/persistenceVolume" }
       }
     },
     "service": {
