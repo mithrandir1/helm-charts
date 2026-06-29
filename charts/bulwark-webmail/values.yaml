@@ -43,6 +43,7 @@ config:
   jmapServerUrl: "https://mail.example.com/jmap"
   appName: "Bulwark Webmail"
   logLevel: "info"
+  logFormat: "json"
   # Optional: OAuth2/OIDC SSO
   oauthIssuerUrl: ""
   TZ: Europe/Vienna
