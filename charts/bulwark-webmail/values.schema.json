@@ -124,6 +124,11 @@
           "enum": ["error", "warn", "info", "debug"],
           "description": "Application log verbosity"
         },
+        "logFormat": {
+          "type": "string",
+          "enum": ["json", "text"],
+          "description": "Application log format"
+        },
         "oauthIssuerUrl": {
           "type": "string",
           "description": "OAuth2/OIDC issuer URL for SSO (optional)"
