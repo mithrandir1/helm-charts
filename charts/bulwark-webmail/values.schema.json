@@ -374,6 +374,21 @@
       "description": "Topology spread constraints for pod scheduling",
       "items": { "type": "object" }
     },
+    "hostAliases": {
+      "type": "array",
+      "description": "Host aliases added to the pod's /etc/hosts",
+      "items": {
+        "type": "object",
+        "required": ["ip", "hostnames"],
+        "properties": {
+          "ip": { "type": "string" },
+          "hostnames": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
     "nodeSelector": {
       "type": "object",
       "description": "Node selector labels"

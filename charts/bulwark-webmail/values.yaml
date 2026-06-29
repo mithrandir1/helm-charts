@@ -184,6 +184,13 @@ topologySpreadConstraints: []
 
 nodeSelector: {}
 
+# hostAliases adds entries to the pod's /etc/hosts — useful when internal DNS resolution
+# differs from public routing, e.g. to reach an OIDC IdP (Keycloak) via its public IP.
+hostAliases: []
+# - ip: "1.2.3.4"
+#   hostnames:
+#     - "keycloak.example.com"
+
 tolerations: []
 
 # Soft pod anti-affinity example (spread replicas across nodes):
