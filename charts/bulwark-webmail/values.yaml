@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/bulwarkmail/webmail
   pullPolicy: IfNotPresent
-  tag: "1.7.4"
+  tag: ""
   # digest: ""  # pin for immutable deploys, e.g. sha256:abc123...
 
 imagePullSecrets: []
