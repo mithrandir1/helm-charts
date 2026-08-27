@@ -227,6 +227,14 @@ namespaces:
       #     path: "path/to/secret"      # path within the KV mount
       #     secretType: Opaque          # Kubernetes secret type
       #     refreshAfter: 1h
+      #     # Optional (ESO only): map single Vault properties onto differently named
+      #     # keys of the Kubernetes secret. Without "keys", all properties of the
+      #     # Vault secret are copied verbatim (dataFrom.extract).
+      #     keys:
+      #       - secretKey: ACCESS_KEY_ID     # key in the Kubernetes secret
+      #         property: username           # key in the Vault secret (default: secretKey)
+      #       - secretKey: ACCESS_SECRET_KEY
+      #         property: password
     secrets:
       dockerconfig:
         hostname: repo.example.com

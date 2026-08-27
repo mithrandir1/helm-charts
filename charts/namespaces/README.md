@@ -158,10 +158,49 @@ Supports both [Vault Secrets Operator (VSO)](https://developer.hashicorp.com/vau
 | `vaultSecrets.secrets[].mount` | KV engine mount path | Both |
 | `vaultSecrets.secrets[].path` | Secret path within the KV mount | Both |
 | `vaultSecrets.secrets[].secretType` | Kubernetes Secret type (e.g. `Opaque`) | Both (optional) |
+| `vaultSecrets.secrets[].keys[]` | Explicit key mapping with `secretKey` (key in the Kubernetes Secret) and optional `property` (key in the Vault secret, defaults to `secretKey`). When omitted, all properties of the Vault secret are copied verbatim via `dataFrom.extract`. | ESO (optional) |
 | `vaultSecrets.secrets[].refreshAfter` | Sync interval (e.g. `24h`) | Both (default: `3600s`/`1h`) |
 | `vaultSecrets.secrets[].type` | Vault KV version: `kv-v1` or `kv-v2` | VSO (default: `kv-v2`) |
 | `vaultSecrets.secrets[].namespace` | Vault Enterprise namespace | VSO (optional) |
 | `vaultSecrets.secrets[].transformation` | VSO transformation configuration | VSO (optional) |
+
+Example — copy a Vault secret and rename its properties on the way in (ESO):
+
+```yaml
+namespaces:
+  - name: my-app
+    enabled: true
+    vaultSecrets:
+      operator: eso
+      authentications:
+        - name: secretstore-my-app
+          role: kube_local
+          mount: kube_local
+          vaultAddress: "http://openbao.openbao.svc:8200"
+      secrets:
+        # All properties copied verbatim
+        - name: my-app-db-superuser
+          auth: secretstore-my-app
+          mount: kv
+          path: "apps/my-app/db-superuser"
+          secretType: kubernetes.io/basic-auth
+        # Renamed: username -> ACCESS_KEY_ID, password -> ACCESS_SECRET_KEY
+        - name: my-app-s3-creds
+          auth: secretstore-my-app
+          mount: kv
+          path: "apps/s3/user-backup"
+          keys:
+            - secretKey: ACCESS_KEY_ID
+              property: username
+            - secretKey: ACCESS_SECRET_KEY
+              property: password
+```
+
+#### Extra manifests (`extraDeploy`)
+
+| Parameter | Description |
+|-----------|-------------|
+| `extraDeploy[]` | List of arbitrary Kubernetes manifests deployed alongside the namespace. Each entry is rendered through `tpl`, so Helm templating inside the manifests is evaluated. |
 
 #### Kubernetes Secrets (`secrets`)
 
