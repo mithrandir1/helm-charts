@@ -17,6 +17,11 @@
           "type": ["string", "null"],
           "description": "Comma-separated CIDR ranges for the ingress controller. When empty a namespaceSelector is used instead."
         },
+        "vaultNamespace": {
+          "type": "string",
+          "default": "",
+          "description": "Default Vault Enterprise / OpenBao namespace for all generated SecretStore, VaultAuth and VaultStaticSecret objects. Overridden per entry by vaultSecrets.authentications[].namespace / vaultSecrets.secrets[].namespace. Empty means the root namespace."
+        },
         "tshirt_sizes": {
           "type": "array",
           "description": "Predefined quota/limitRange profiles referenced by namespaces[].project_size.",
@@ -369,7 +374,7 @@
         "serviceAccount": { "type": "string", "default": "default" },
         "vaultAddress": { "type": "string", "description": "Required for ESO." },
         "kvVersion": { "type": "string", "enum": ["v1", "v2"], "description": "ESO KV engine version." },
-        "namespace": { "type": "string", "description": "Vault Enterprise namespace (ESO)." }
+        "namespace": { "type": ["string", "null"], "description": "Vault Enterprise / OpenBao namespace for the SecretStore (ESO). Defaults to global.vaultNamespace." }
       }
     },
     "vaultSecret": {
@@ -404,7 +409,7 @@
           }
         },
         "refreshAfter": { "type": "string", "description": "Sync interval, e.g. '24h' or '3600s'." },
-        "namespace": { "type": "string", "description": "Vault Enterprise namespace (VSO only)." },
+        "namespace": { "type": ["string", "null"], "description": "Vault Enterprise / OpenBao namespace for the VaultStaticSecret (VSO only). Defaults to global.vaultNamespace." },
         "transformation": {
           "type": "object",
           "description": "VSO transformation configuration."

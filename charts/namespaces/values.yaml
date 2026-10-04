@@ -16,6 +16,12 @@
 global:
   application_gitops_namespace: argocd
   ingress_controller_range: 
+  # Vault-Enterprise- bzw. OpenBao-Namespace, in dem die Secrets liegen.
+  # Wird als Default fuer vaultSecrets.authentications[].namespace und
+  # vaultSecrets.secrets[].namespace verwendet; leer == root-Namespace.
+  # Der Namespace ist ein Header (X-Vault-Namespace), kein Pfadsegment --
+  # mount/path der Secrets bleiben davon unveraendert.
+  vaultNamespace: ""
 
 # List of namespaces this tenant shall manage.
 # A tenant or project may consist of multiple namespace
@@ -203,6 +209,8 @@ namespaces:
         - name: secret
           auth: auth-role-1
           mount: kv
+          # Optionaler Vault-Enterprise-/OpenBao-Namespace (nur VSO).
+          # Ohne Angabe gilt global.vaultNamespace.
           namespace: null
           path: "path/to/secret"
           type: kv-v2          # Vault KV engine version: kv-v1 or kv-v2
@@ -219,7 +227,11 @@ namespaces:
       #     serviceAccount: default
       #     vaultAddress: "https://vault:8200"  # required for ESO
       #     kvVersion: "v2"             # optional, defaults to v2
-      #     namespace: ""               # optional Vault Enterprise namespace
+      #     # Optional Vault-Enterprise-/OpenBao-Namespace fuer diesen SecretStore.
+      #     # Ohne Angabe gilt global.vaultNamespace. Der Namespace geht als
+      #     # X-Vault-Namespace-Header raus -- "mount" und "path" bleiben gleich,
+      #     # also z.B. weiterhin kv/apps/... und nicht itdesign/kv/apps/...
+      #     namespace: "itdesign"
       # secrets:
       #   - name: secret
       #     auth: auth-role-1
@@ -237,8 +249,9 @@ namespaces:
       #         property: password
     secrets:
       dockerconfig:
-        hostname: repo.example.com
-        auth: "base64 encoded basic auth"
+        - name: pull-secret
+          hostname: repo.example.com
+          auth: "base64 encoded basic auth"
 ###############################
   #  Name of the 2nd Namespace, with only Namespace creation
   - name: my-main-app-project-2

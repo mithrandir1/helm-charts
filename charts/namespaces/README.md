@@ -23,6 +23,7 @@ helm install my-namespaces oci://ghcr.io/tloibl/helm-charts/namespaces --version
 | `global.application_gitops_namespace` | Namespace where ArgoCD is deployed | `argocd` |
 | `global.ingress_controller_range` | Comma-separated CIDR ranges for the ingress controller. If unset, a namespaceSelector with label `network.itdesign.at/policy-group: ingress` is used instead. | `""` |
 | `global.tshirt_sizes` | List of predefined t-shirt size profiles for quotas and limit ranges | `[]` |
+| `global.vaultNamespace` | Default Vault Enterprise / OpenBao namespace for every generated `SecretStore`, `VaultAuth` and `VaultStaticSecret`. Overridden per entry by `vaultSecrets.authentications[].namespace` / `vaultSecrets.secrets[].namespace`. Empty means the root namespace. | `""` |
 
 ### Namespace Items (`namespaces[]`)
 
@@ -147,7 +148,7 @@ Supports both [Vault Secrets Operator (VSO)](https://developer.hashicorp.com/vau
 | `vaultSecrets.authentications[].serviceAccount` | ServiceAccount name | Both (default: `default`) |
 | `vaultSecrets.authentications[].vaultAddress` | Vault server URL | ESO only |
 | `vaultSecrets.authentications[].kvVersion` | KV engine version (`v1`/`v2`) | ESO (default: `v2`) |
-| `vaultSecrets.authentications[].namespace` | Vault Enterprise namespace | ESO (optional) |
+| `vaultSecrets.authentications[].namespace` | Vault Enterprise / OpenBao namespace. Defaults to `global.vaultNamespace`. | Both (optional) |
 
 **Secrets** — creates `VaultStaticSecret` (VSO) or `ExternalSecret` (ESO) CRDs:
 
@@ -161,7 +162,7 @@ Supports both [Vault Secrets Operator (VSO)](https://developer.hashicorp.com/vau
 | `vaultSecrets.secrets[].keys[]` | Explicit key mapping with `secretKey` (key in the Kubernetes Secret) and optional `property` (key in the Vault secret, defaults to `secretKey`). When omitted, all properties of the Vault secret are copied verbatim via `dataFrom.extract`. | ESO (optional) |
 | `vaultSecrets.secrets[].refreshAfter` | Sync interval (e.g. `24h`) | Both (default: `3600s`/`1h`) |
 | `vaultSecrets.secrets[].type` | Vault KV version: `kv-v1` or `kv-v2` | VSO (default: `kv-v2`) |
-| `vaultSecrets.secrets[].namespace` | Vault Enterprise namespace | VSO (optional) |
+| `vaultSecrets.secrets[].namespace` | Vault Enterprise / OpenBao namespace. Defaults to `global.vaultNamespace`. | VSO (optional) |
 | `vaultSecrets.secrets[].transformation` | VSO transformation configuration | VSO (optional) |
 
 Example — copy a Vault secret and rename its properties on the way in (ESO):
@@ -195,6 +196,40 @@ namespaces:
             - secretKey: ACCESS_SECRET_KEY
               property: password
 ```
+
+##### Vault Enterprise / OpenBao namespaces
+
+OpenBao supports namespaces since 2.4 (previously a Vault Enterprise-only feature). A
+namespace is sent as the `X-Vault-Namespace` **header**, it is *not* a path segment — so
+`mount` and `path` stay exactly the same when secrets move into a namespace:
+
+```yaml
+global:
+  # applies to every SecretStore / VaultAuth / VaultStaticSecret this chart renders
+  vaultNamespace: itdesign
+
+namespaces:
+  - name: my-app
+    enabled: true
+    vaultSecrets:
+      operator: eso
+      authentications:
+        - name: secretstore-my-app
+          role: kube_local
+          mount: kube_local
+          vaultAddress: "http://openbao.openbao.svc:8200"
+          # namespace: other-ns   # optional, overrides global.vaultNamespace here
+      secrets:
+        - name: my-app-db
+          auth: secretstore-my-app
+          mount: kv                       # unchanged
+          path: "apps/my-app/db"          # unchanged
+```
+
+renders `spec.provider.vault.namespace: "itdesign"` on the `SecretStore`, while the
+`ExternalSecret` still references `kv/apps/my-app/db`. The Kubernetes auth method
+(`mount: kube_local`) must exist **inside** that OpenBao namespace; the JWT audience and
+the role name are unaffected.
 
 #### Extra manifests (`extraDeploy`)
 

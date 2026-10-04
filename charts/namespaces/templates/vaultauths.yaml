@@ -4,6 +4,8 @@
 {{- $operator := default "vso" .vaultSecrets.operator }}
 {{- range .vaultSecrets.authentications }}
 {{- $name := .name | required "name is required for VaultAuth/SecretStore." }}
+{{/* Vault-Enterprise-/OpenBao-Namespace: per-Eintrag schlaegt globalen Default. */}}
+{{- $vaultNs := default $.Values.global.vaultNamespace .namespace }}
 ---
 {{- if eq $operator "eso" }}
 apiVersion: external-secrets.io/v1
@@ -16,8 +18,8 @@ spec:
     vault:
       server: {{ required "vaultAddress is required for SecretStore (ESO)." .vaultAddress | quote }}
       version: {{ default "v2" .kvVersion | quote }}
-      {{- if .namespace }}
-      namespace: {{ .namespace | quote }}
+      {{- if $vaultNs }}
+      namespace: {{ $vaultNs | quote }}
       {{- end }}
       auth:
         kubernetes:
@@ -36,6 +38,9 @@ metadata:
   namespace: {{ $value.name | replace "_" "-" | quote }}
 spec:
   method: kubernetes
+  {{- if $vaultNs }}
+  namespace: {{ $vaultNs | quote }}
+  {{- end }}
   mount: {{ required "mount is required for VaultAuth." .mount }}
   kubernetes:
     role: {{ required "role is required for VaultAuth." .role | quote }}
