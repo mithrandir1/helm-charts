@@ -65,7 +65,7 @@ helm uninstall my-webmail
 | Parameter | Description | Default |
 |---|---|---|
 | `image.repository` | Container image repository | `ghcr.io/bulwarkmail/webmail` |
-| `image.tag` | Image tag | `1.7.4` |
+| `image.tag` | Image tag | `""` (Chart `appVersion`) |
 | `image.digest` | Optional SHA256 digest for immutable pinning | `""` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `imagePullSecrets` | Image pull secrets (for private registries) | `[]` |
@@ -119,6 +119,8 @@ These values are rendered into a ConfigMap and injected as environment variables
 | `config.appName` | Display name shown in the UI | `Bulwark Webmail` |
 | `config.logLevel` | Log verbosity (`error`/`warn`/`info`/`debug`) | `info` |
 | `config.oauthIssuerUrl` | OAuth2/OIDC issuer URL for SSO (optional) | `""` |
+| `config.oauthOnly` | Hide the username/password form, SSO only (needs `oauthIssuerUrl`) | `false` |
+| `config.autoSso` | Redirect straight to the IdP, skipping the login page (needs `oauthIssuerUrl`) | `false` |
 | `config.TZ` | Container timezone | `Europe/Vienna` |
 
 ### Secrets

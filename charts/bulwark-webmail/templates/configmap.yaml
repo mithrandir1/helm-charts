@@ -13,6 +13,12 @@ data:
   {{- if .Values.config.oauthIssuerUrl }}
   OAUTH_ENABLED: "true"
   OAUTH_ISSUER_URL: {{ .Values.config.oauthIssuerUrl | quote }}
+  {{- if .Values.config.oauthOnly }}
+  OAUTH_ONLY: "true"
+  {{- end }}
+  {{- if .Values.config.autoSso }}
+  AUTO_SSO_ENABLED: "true"
+  {{- end }}
   {{- end }}
   PORT: "3000"
   HOSTNAME: "0.0.0.0"

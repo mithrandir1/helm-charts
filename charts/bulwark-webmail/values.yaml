@@ -46,6 +46,10 @@ config:
   logFormat: "json"
   # Optional: OAuth2/OIDC SSO
   oauthIssuerUrl: ""
+  # Hide the username/password form and offer SSO only (requires oauthIssuerUrl)
+  oauthOnly: false
+  # Redirect straight to the identity provider, skipping the login page (requires oauthIssuerUrl)
+  autoSso: false
   TZ: Europe/Vienna
 
 # Secret values — sensitive configuration

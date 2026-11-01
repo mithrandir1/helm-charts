@@ -5,8 +5,8 @@ description: |
   designed for use with Stalwart Mail Server. It provides mail, calendar, contacts, and file
   management in a single application.
 type: application
-version: 0.1.5
-appVersion: "1.7.6"
+version: 0.1.6
+appVersion: "1.19.1"
 home: https://github.com/bulwarkmail/webmail
 sources:
   - https://github.com/bulwarkmail/webmail

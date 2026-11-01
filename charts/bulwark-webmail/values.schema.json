@@ -133,6 +133,14 @@
           "type": "string",
           "description": "OAuth2/OIDC issuer URL for SSO (optional)"
         },
+        "oauthOnly": {
+          "type": "boolean",
+          "description": "Hide the username/password form and offer SSO only (requires oauthIssuerUrl)"
+        },
+        "autoSso": {
+          "type": "boolean",
+          "description": "Redirect straight to the identity provider, skipping the login page (requires oauthIssuerUrl)"
+        },
         "TZ": {
           "type": "string",
           "description": "Container timezone (IANA tz database name)"
