@@ -1,0 +1,22 @@
+apiVersion: v2
+name: yuvomi
+description: |
+  Yuvomi is a self-hosted family planner: calendar, tasks, meals, shopping,
+  budget, documents and more in one app. Single Node.js container with an
+  embedded SQLite/SQLCipher database - no external database required.
+type: application
+version: 0.1.0
+appVersion: "2.86.0"
+home: https://yuvomi.cloud
+icon: https://raw.githubusercontent.com/ulsklyc/yuvomi/main/icon.svg
+sources:
+  - https://github.com/ulsklyc/yuvomi
+keywords:
+  - family
+  - planner
+  - calendar
+  - tasks
+  - sqlite
+maintainers:
+  - name: mithrandir1
+    url: https://github.com/mithrandir1

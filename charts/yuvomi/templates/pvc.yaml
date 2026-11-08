@@ -1,0 +1,33 @@
+{{- $root := . -}}
+{{- range $name := list "data" "backups" "modules" "documents" }}
+{{- $vol := index $root.Values.persistence $name }}
+{{- if and $vol.enabled (not $vol.existingClaim) }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "yuvomi.pvcName" (dict "name" $name "context" $root) }}
+  labels:
+    {{- include "yuvomi.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+  {{- with $vol.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- range $vol.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ $vol.size | quote }}
+  {{- if $vol.storageClass }}
+  {{- if eq "-" $vol.storageClass }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ $vol.storageClass | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

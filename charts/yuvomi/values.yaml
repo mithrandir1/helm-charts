@@ -1,0 +1,270 @@
+# Yuvomi keeps everything in one SQLite file. Exactly one pod may open it, so
+# the chart only allows 0 or 1 replicas and always uses the Recreate strategy.
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ulsklyc/yuvomi
+  pullPolicy: IfNotPresent
+  # Defaults to .Chart.AppVersion. Tags follow the release without the "v"
+  # prefix (2.86.0, not v2.86.0).
+  tag: ""
+  # digest: ""  # pin for immutable deploys, e.g. sha256:abc123...
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# Pod Security Context - compliant with the 'restricted' Pod Security Standard.
+# The image's entrypoint only chowns the volumes and drops to the "node" user
+# (uid 1000) when started as root; started as 1000 it execs the app directly.
+# fsGroup takes over the chown part.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security Context - compliant with the 'restricted' Pod Security Standard.
+# The app writes only to /data, /backups, /tmp (emptyDir) and - for modules
+# installed from the web UI - /app/modules, so the root filesystem stays read-only.
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Public URL of the instance (BASE_URL). Required for password-reset and
+# invitation mails and used as the default for oidc.redirectUri.
+baseUrl: ""
+
+# Container time zone (TZ). Default for the household zone and the backup schedule.
+timezone: Europe/Vienna
+
+# SESSION_SECURE: secure cookies. Keep true behind an HTTPS ingress.
+sessionSecure: true
+
+# TRUST_PROXY: which X-Forwarded-For hops Express trusts. "1" fits a single
+# ingress controller in front of the pod.
+trustProxy: "1"
+
+# OIDC / SSO. Yuvomi enables OIDC only when issuer, redirect URI, client ID and
+# client secret are all set. Client ID and secret are secrets: put them into the
+# Secret as OIDC_CLIENT_ID and OIDC_CLIENT_SECRET (see "secret" below).
+oidc:
+  enabled: false
+  # e.g. https://keycloak.example.com/realms/master
+  issuer: ""
+  # Defaults to <baseUrl>/api/v1/auth/oidc/callback
+  redirectUri: ""
+  # OIDC_ALLOW_SIGNUP: false = SSO never creates new accounts; only accounts an
+  # admin created (or that match by e-mail) are linked on first SSO sign-in.
+  allowSignup: true
+  # AUTH_ALLOW_PASSWORD_LOGIN: false = SSO only. Ignored by Yuvomi until at
+  # least one admin account is linked to the provider. The first admin is
+  # always created through /setup with a password.
+  allowPasswordLogin: true
+
+# Scheduled backups written by the app itself to persistence.backups.
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  keep: 7
+
+# Any further non-secret environment variables, rendered into the ConfigMap.
+# See https://github.com/ulsklyc/yuvomi/blob/main/.env.example for the full list.
+env: {}
+  # WEATHER_LAT: "48.2"
+  # WEATHER_LON: "16.37"
+  # WEATHER_CITY: Wien
+  # MAX_UPLOAD_MB: "20"
+  # EMAIL_SMTP_HOST: smtp.example.com
+
+# Secret environment variables, loaded via envFrom. The keys are the env var
+# names Yuvomi expects, e.g.:
+#   SESSION_SECRET      cookie signing key        (openssl rand -hex 32)
+#   DB_ENCRYPTION_KEY   SQLCipher key, see below  (openssl rand -hex 32)
+#   OIDC_CLIENT_ID / OIDC_CLIENT_SECRET
+#   EMAIL_SMTP_USER / EMAIL_SMTP_PASS
+#
+# Without SESSION_SECRET and DB_ENCRYPTION_KEY a fresh installation generates
+# both on its first start and stores them in <data>/.secrets/ - on the same
+# volume as the database. Supplying DB_ENCRYPTION_KEY yourself keeps the key
+# outside of that volume. Once a database is encrypted, the key can never
+# change: a different key aborts the start.
+secret:
+  # create: true renders a Secret from "values".
+  # create: false + existingSecret references an externally managed Secret.
+  create: false
+  existingSecret: ""
+  values: {}
+
+# Persistent volumes. A disabled "data" or "backups" volume is replaced by an
+# emptyDir (data is lost on every restart). A disabled "modules" or
+# "documents" volume is not mounted at all.
+persistence:
+  # SQLite database and the auto-generated .secrets directory
+  data:
+    enabled: true
+    mountPath: /data
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    annotations: {}
+    # existingClaim: ""
+  # Target of the scheduled backups (BACKUP_DIR)
+  backups:
+    enabled: true
+    mountPath: /backups
+    size: 2Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    annotations: {}
+  # Third-party drop-in modules (MODULES_DIR). Only needed for custom modules;
+  # set env.MODULES_ALLOW_WEB_INSTALL: "true" to install them from the web UI.
+  modules:
+    enabled: false
+    mountPath: /app/modules
+    size: 256Mi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    annotations: {}
+  # Local document storage. When enabled, new uploads are written here instead
+  # of into the database (DOCUMENT_STORAGE_LOCAL_ENABLED/_PATH are set for you).
+  documents:
+    enabled: false
+    mountPath: /documents
+    size: 5Gi
+    accessModes:
+      - ReadWriteOnce
+    storageClass: ""
+    annotations: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+
+# Classic Kubernetes Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: yuvomi.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: yuvomi-tls
+  #    hosts:
+  #      - yuvomi.example.com
+
+# Gateway API HTTPRoute (alternative to the Ingress)
+gateway:
+  enabled: false
+  annotations: {}
+  parentRefs:
+    - name: prod-gateway
+      namespace: gateway-system
+      sectionName: https
+  hostnames:
+    - yuvomi.example.com
+
+# No CPU limit on purpose: right after a start the app compresses its static
+# files once with Brotli (~25 s CPU on one core); a tight limit stretches that.
+# Uploads and backup restores are buffered in memory, hence the memory headroom.
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    memory: 768Mi
+
+# /health answers JSON unless the request accepts text/html (the kubelet sends
+# "Accept: */*", so it gets the health check, not the SPA).
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Database migrations run before the server listens; allow up to 5 minutes.
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  failureThreshold: 30
+
+networkPolicy:
+  enabled: false
+  ingressRules:
+    - ports:
+        - port: 3000
+          protocol: TCP
+  # DNS plus HTTP(S) for OIDC, calendar sync, weather, WebDAV, push services
+  egressRules:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+
+nodeSelector: {}
+
+# hostAliases adds entries to the pod's /etc/hosts - useful when internal DNS
+# resolution differs from public routing, e.g. to reach an OIDC IdP via its public IP.
+hostAliases: []
+# - ip: "1.2.3.4"
+#   hostnames:
+#     - "keycloak.example.com"
+
+tolerations: []
+affinity: {}
+
+extraEnv: []
+# - name: FOO
+#   valueFrom:
+#     secretKeyRef:
+#       name: my-secret
+#       key: my-key
+
+extraVolumes: []
+extraVolumeMounts: []
+
+# Deploy arbitrary additional Kubernetes objects alongside the chart.
+# Values are rendered as templates so you can use {{ .Release.Name }}, etc.
+extraDeploy: []

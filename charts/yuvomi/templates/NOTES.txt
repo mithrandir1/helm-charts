@@ -1,0 +1,35 @@
+Yuvomi {{ .Values.image.tag | default .Chart.AppVersion }} is being deployed.
+
+1. Application URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else if .Values.gateway.enabled }}
+  https://{{ index .Values.gateway.hostnames 0 }}
+{{- else }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "yuvomi.fullname" . }} 8080:{{ .Values.service.port }}
+  -> http://127.0.0.1:8080  (set sessionSecure=false for plain HTTP)
+{{- end }}
+
+2. First start: open /setup and create the first administrator with a password.
+{{- if .Values.oidc.enabled }}
+   Then link that account to the OIDC provider in the account settings - only
+   after that can oidc.allowPasswordLogin=false take effect.
+{{- end }}
+{{- if not (include "yuvomi.secretName" .) }}
+
+NOTE: No Secret configured. SESSION_SECRET and DB_ENCRYPTION_KEY are generated
+      on the first start and stored in {{ .Values.persistence.data.mountPath }}/.secrets/,
+      on the same volume as the database. Back that directory up as well.
+{{- end }}
+{{- if not .Values.persistence.data.enabled }}
+
+WARNING: persistence.data is disabled - the database lives in an emptyDir and
+         is lost whenever the pod is recreated.
+{{- end }}
+{{- if and .Values.oidc.enabled (not (include "yuvomi.secretName" .)) }}
+
+WARNING: oidc.enabled is set, but there is no Secret with OIDC_CLIENT_ID and
+         OIDC_CLIENT_SECRET - Yuvomi will not enable SSO.
+{{- end }}

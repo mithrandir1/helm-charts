@@ -1,0 +1,40 @@
+{{- if and .Values.oidc.enabled (not .Values.oidc.issuer) }}
+{{- fail "oidc.enabled requires oidc.issuer" }}
+{{- end }}
+{{- if and .Values.oidc.enabled (not (include "yuvomi.oidcRedirectUri" .)) }}
+{{- fail "oidc.enabled requires oidc.redirectUri or baseUrl" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "yuvomi.fullname" . }}
+  labels:
+    {{- include "yuvomi.labels" . | nindent 4 }}
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  TZ: {{ .Values.timezone | quote }}
+  DB_PATH: {{ printf "%s/yuvomi.db" (trimSuffix "/" .Values.persistence.data.mountPath) | quote }}
+  BACKUP_DIR: {{ .Values.persistence.backups.mountPath | quote }}
+  MODULES_DIR: {{ .Values.persistence.modules.mountPath | quote }}
+  SESSION_SECURE: {{ .Values.sessionSecure | toString | quote }}
+  TRUST_PROXY: {{ .Values.trustProxy | toString | quote }}
+  {{- with .Values.baseUrl }}
+  BASE_URL: {{ trimSuffix "/" . | quote }}
+  {{- end }}
+  BACKUP_ENABLED: {{ .Values.backup.enabled | toString | quote }}
+  BACKUP_SCHEDULE: {{ .Values.backup.schedule | quote }}
+  BACKUP_KEEP: {{ .Values.backup.keep | toString | quote }}
+  {{- if .Values.persistence.documents.enabled }}
+  DOCUMENT_STORAGE_LOCAL_ENABLED: "true"
+  DOCUMENT_STORAGE_LOCAL_PATH: {{ .Values.persistence.documents.mountPath | quote }}
+  {{- end }}
+  {{- if .Values.oidc.enabled }}
+  OIDC_ISSUER: {{ .Values.oidc.issuer | quote }}
+  OIDC_REDIRECT_URI: {{ include "yuvomi.oidcRedirectUri" . | quote }}
+  OIDC_ALLOW_SIGNUP: {{ .Values.oidc.allowSignup | toString | quote }}
+  AUTH_ALLOW_PASSWORD_LOGIN: {{ .Values.oidc.allowPasswordLogin | toString | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.env }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
