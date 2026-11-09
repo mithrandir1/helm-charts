@@ -34,10 +34,23 @@ spec:
           env:
             - name: BROKER_ADDRESS
               value: "{{ .Values.broker_address }}"
+            {{- if .Values.existingSecret.name }}
+            - name: USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret.name }}
+                  key: {{ .Values.existingSecret.userKey }}
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret.name }}
+                  key: {{ .Values.existingSecret.passwordKey }}
+            {{- else }}
             - name: USER
               value: "{{  .Values.user }}"
             - name: PASSWORD
               value: "{{ .Values.password }}"
+            {{- end }}
             - name: ADDITIONAL_PARAMETERS
               value: "{{ .Values.additional_parameters }}"
             - name: TZ

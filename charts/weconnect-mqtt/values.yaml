@@ -55,6 +55,17 @@ tolerations: []
 affinity: {}
 
 broker_address: "127.0.0.1"
+
+# Zugangsdaten des WeConnect-Kontos.
+#
+# Entweder direkt hier (user/password) oder - bevorzugt - aus einem bereits
+# vorhandenen Secret, z.B. einem von External Secrets erzeugten. Ist
+# existingSecret.name gesetzt, werden user/password ignoriert.
+existingSecret:
+  name: ""
+  userKey: username
+  passwordKey: password
+
 user: "test@example.com"
 password: "password"
 additional_parameters: ""
