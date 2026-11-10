@@ -25,6 +25,8 @@ with an external MySQL/MariaDB.
   [OpenID Connect Generic Client](https://wordpress.org/plugins/daggerhart-openid-connect-generic/)
   plugin, configured through `OIDC_*` constants. Endpoints are derived from a
   Keycloak realm URL unless set explicitly.
+- Must-use plugins from values (`muPlugins`), mounted read-only outside the
+  docroot - for small glue code that should live in Git, not on the volume.
 - Ingress, optional NetworkPolicy, `extraDeploy`.
 
 Only the Apache image variants work (`*-apache`), not `fpm` or `alpine`.

@@ -495,6 +495,17 @@
     },
     "extraDeploy": {
       "type": "array"
+    },
+    "muPlugins": {
+      "type": "object",
+      "description": "Must-use plugins as {filename.php: code}",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9._-]+\\.php$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^<\\?php"
+      }
     }
   }
 }

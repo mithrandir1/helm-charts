@@ -36,6 +36,10 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "wordpress.serviceAccountName" . }}
       automountServiceAccountToken: false
+      # The Service is called like the app, so the injected WORDPRESS_SERVICE_*
+      # and WORDPRESS_PORT_* variables would end up in the entrypoint's
+      # WORDPRESS_* handling.
+      enableServiceLinks: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
@@ -128,6 +132,12 @@ spec:
             - name: files
               mountPath: /usr/local/etc/php/conf.d/zz-chart.ini
               subPath: zz-chart.ini
+            {{- if .Values.muPlugins }}
+            # Outside the docroot, so the files cannot be requested directly.
+            - name: mu-plugins
+              mountPath: {{ include "wordpress.muPluginDir" . }}
+              readOnly: true
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -148,6 +158,11 @@ spec:
         - name: files
           configMap:
             name: {{ $fullName }}-files
+        {{- if .Values.muPlugins }}
+        - name: mu-plugins
+          configMap:
+            name: {{ $fullName }}-mu-plugins
+        {{- end }}
         - name: wp-content
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:

@@ -60,3 +60,17 @@ data:
     {{- with .Values.php.extraIni }}
     {{- . | nindent 4 }}
     {{- end }}
+{{- with .Values.muPlugins }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wordpress.fullname" $ }}-mu-plugins
+  labels:
+    {{- include "wordpress.labels" $ | nindent 4 }}
+data:
+  {{- range $name, $code := . }}
+  {{ $name }}: |
+    {{- $code | trim | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -101,6 +101,13 @@ Host part of .Values.url (used as Apache ServerName).
 {{- end }}
 
 {{/*
+Directory of the must-use plugins from .Values.muPlugins.
+*/}}
+{{- define "wordpress.muPluginDir" -}}
+/var/lib/wordpress/mu-plugins
+{{- end }}
+
+{{/*
 OIDC endpoint: explicit value or Keycloak layout below the issuer.
 Usage: include "wordpress.oidcEndpoint" (dict "name" "token" "path" "token" "context" .)
 */}}
@@ -128,6 +135,9 @@ define('FS_METHOD', {{ . | squote }});
 {{- end }}
 {{- if .Values.config.disableCoreAutoUpdate }}
 define('WP_AUTO_UPDATE_CORE', false);
+{{- end }}
+{{- if .Values.muPlugins }}
+define('WPMU_PLUGIN_DIR', {{ include "wordpress.muPluginDir" . | squote }});
 {{- end }}
 {{- if .Values.oidc.enabled }}
 define('OIDC_LOGIN_TYPE', {{ .Values.oidc.loginType | squote }});

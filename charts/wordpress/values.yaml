@@ -270,6 +270,18 @@ extraEnv: []
 extraVolumes: []
 extraVolumeMounts: []
 
+# Must-use plugins as {filename.php: code}. They are mounted read-only outside
+# the docroot (WPMU_PLUGIN_DIR points there), are loaded before all regular
+# plugins and cannot be deactivated from the dashboard. Keep them small - e.g.
+# a shortcode that glues two plugins together. Start every file with
+# "<?php" and "defined('ABSPATH') || exit;".
+# Note: wp-content/mu-plugins on the volume is no longer read when this is set.
+muPlugins: {}
+#  my-shortcode.php: |
+#    <?php
+#    defined('ABSPATH') || exit;
+#    add_shortcode('hello', fn() => 'Hello');
+
 # Deploy arbitrary additional Kubernetes objects alongside the chart.
 # Values are rendered as templates so you can use {{ .Release.Name }}, etc.
 extraDeploy: []
