@@ -1,0 +1,176 @@
+{{- $secretName := include "wordpress.secretName" . -}}
+{{- $fullName := include "wordpress.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # wp-content usually sits on a ReadWriteOnce volume.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "wordpress.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if and .Values.secret.create (not .Values.secret.existingSecret) }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "wordpress.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "wordpress.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        # Copies the core from the image into the emptyDir docroot. The image's
+        # own entrypoint would do that with "tar", which as non-root fails on
+        # the root-owned emptyDir ("Cannot change mode"). With index.php in
+        # place the entrypoint skips the copy and only writes wp-config.php.
+        # wp-content is not copied: it is the persistent volume.
+        - name: install-core
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ include "wordpress.imageTag" . }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              cd /usr/src/wordpress
+              for f in * .htaccess; do
+                [ "$f" = wp-content ] || cp -R "$f" /var/www/html/
+              done
+              echo "WordPress $(sed -n "s/^\$wp_version = '\(.*\)';/\1/p" wp-includes/version.php) copied to /var/www/html"
+          volumeMounts:
+            - name: docroot
+              mountPath: /var/www/html
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ include "wordpress.imageTag" . }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}
+            {{- if $secretName }}
+            - secretRef:
+                name: {{ $secretName }}
+            {{- end }}
+          env:
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "wordpress.dbSecretName" . }}
+                  key: {{ if .Values.database.existingSecret }}{{ .Values.database.existingSecretPasswordKey }}{{ else }}WORDPRESS_DB_PASSWORD{{ end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.apache.port }}
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            # The core is copied from /usr/src/wordpress by the image's
+            # entrypoint, the wp-config.php is generated from the env vars.
+            - name: docroot
+              mountPath: /var/www/html
+            - name: wp-content
+              mountPath: /var/www/html/wp-content
+              {{- with .Values.persistence.subPath }}
+              subPath: {{ . }}
+              {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            # PID file and lock dir (/var/run and /var/lock point into /run)
+            - name: run
+              mountPath: /run
+            - name: files
+              mountPath: /etc/apache2/ports.conf
+              subPath: ports.conf
+            - name: files
+              mountPath: /etc/apache2/sites-available/000-default.conf
+              subPath: 000-default.conf
+            - name: files
+              mountPath: /etc/apache2/mods-available/mpm_prefork.conf
+              subPath: mpm_prefork.conf
+            - name: files
+              mountPath: /usr/local/etc/php/conf.d/zz-chart.ini
+              subPath: zz-chart.ini
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: docroot
+          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            {{- with .Values.tmpSizeLimit }}
+            sizeLimit: {{ . }}
+            {{- end }}
+        - name: run
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi
+        - name: files
+          configMap:
+            name: {{ $fullName }}-files
+        - name: wp-content
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "wordpress.pvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

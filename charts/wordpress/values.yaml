@@ -1,0 +1,275 @@
+# The docroot (/var/www/html) is an emptyDir; wp-content is a persistent
+# volume. Several pods could share a ReadWriteMany wp-content, but nothing in
+# this chart is tested for that - keep it at 0 or 1.
+replicaCount: 1
+
+image:
+  repository: docker.io/library/wordpress
+  pullPolicy: IfNotPresent
+  # Defaults to "<appVersion>-php8.3-apache". Only the Apache variants work
+  # with this chart (no php-fpm, no alpine). The tag is the WordPress version:
+  # the core is copied from the image into the emptyDir docroot on every start.
+  tag: ""
+  # digest: ""  # pin for immutable deploys, e.g. sha256:abc123...
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# Pod Security Context - compliant with the 'restricted' Pod Security Standard.
+# The official image works with any uid as long as Apache listens on a port
+# above 1024 (apache.port). Pick the uid that owns the existing wp-content;
+# 33 is www-data in the image.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 33
+  runAsGroup: 33
+  fsGroup: 33
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security Context - compliant with the 'restricted' Pod Security Standard.
+# Writable are only the emptyDirs (/var/www/html, /tmp, /run) and wp-content.
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+# Public URL, e.g. https://blog.example.com. Sets WP_HOME and WP_SITEURL, so
+# the values stored in the database no longer matter.
+url: ""
+
+# Container time zone (TZ).
+timezone: Europe/Vienna
+
+# External MySQL/MariaDB. The password is read from a Secret via secretKeyRef.
+database:
+  # host or host:port
+  host: ""
+  name: wordpress
+  user: wordpress
+  tablePrefix: wp_
+  charset: utf8mb4
+  collate: ""
+  # Existing Secret holding the password (e.g. from External Secrets).
+  existingSecret: ""
+  existingSecretPasswordKey: WORDPRESS_DB_PASSWORD
+  # Used only without existingSecret: the chart renders a Secret from it.
+  password: ""
+
+# Secret environment variables, loaded via envFrom. Expected keys:
+#   WORDPRESS_AUTH_KEY, WORDPRESS_SECURE_AUTH_KEY, WORDPRESS_LOGGED_IN_KEY,
+#   WORDPRESS_NONCE_KEY, WORDPRESS_AUTH_SALT, WORDPRESS_SECURE_AUTH_SALT,
+#   WORDPRESS_LOGGED_IN_SALT, WORDPRESS_NONCE_SALT
+#   OIDC_CLIENT_SECRET (with oidc.enabled)
+#
+# The wp-config.php is regenerated on every start (emptyDir docroot). Without
+# fixed keys and salts the image puts random ones in, and every pod restart
+# signs everybody out.
+secret:
+  # create: true renders a Secret from "values".
+  # create: false + existingSecret references an externally managed Secret.
+  create: false
+  existingSecret: ""
+  values: {}
+
+# wp-config.php settings (rendered into WORDPRESS_CONFIG_EXTRA).
+config:
+  # WP_AUTO_UPDATE_CORE=false. A core update from the dashboard would only land
+  # in the emptyDir and be gone after the next restart, while the database
+  # schema stays upgraded - update WordPress through image.tag instead.
+  # Plugin and theme updates are not affected (they live in wp-content).
+  disableCoreAutoUpdate: true
+  # FS_METHOD - "direct" lets WordPress write plugins/themes without FTP.
+  fsMethod: direct
+  # WORDPRESS_DEBUG (WP_DEBUG)
+  debug: false
+  # Further PHP code appended to the wp-config.php, e.g. define(...) lines.
+  extra: ""
+
+php:
+  uploadMaxFilesize: 64M
+  postMaxSize: 64M
+  memoryLimit: 256M
+  maxExecutionTime: 300
+  maxInputTime: 300
+  # Additional php.ini lines
+  extraIni: ""
+
+apache:
+  # Unprivileged port, so the container needs no NET_BIND_SERVICE.
+  port: 8080
+  # mpm_prefork: every worker is a PHP process that may use up to
+  # php.memoryLimit - keep workers x memoryLimit in line with resources.limits.
+  startServers: 2
+  minSpareServers: 2
+  maxSpareServers: 5
+  maxRequestWorkers: 20
+  maxConnectionsPerChild: 1000
+
+# OpenID Connect login through the "OpenID Connect Generic Client" plugin
+# (slug daggerhart-openid-connect-generic). The chart does not install the
+# plugin - install it into wp-content/plugins and activate it. The settings
+# below are defined as OIDC_* constants in wp-config.php, which win over the
+# plugin's settings page (the fields are greyed out there).
+# Callback URL for the IdP: <url>/wp-admin/admin-ajax.php?action=openid-connect-authorize
+oidc:
+  enabled: false
+  # Realm URL, e.g. https://keycloak.example.com/realms/master. Used as the
+  # expected "iss" and - for Keycloak - to derive the endpoints below.
+  issuer: ""
+  clientId: ""
+  # OIDC_CLIENT_SECRET comes from the Secret (see "secret").
+  scope: openid email profile
+  # button = extra button on the login form, auto = redirect straight to the IdP
+  loginType: button
+  # Link an IdP login to an existing WordPress account with the same e-mail
+  # address (the plugin does not check email_verified).
+  linkExistingUsers: true
+  # Create a WordPress account (with the default role) for unknown users.
+  createIfDoesNotExist: false
+  redirectUserBack: true
+  redirectOnLogout: true
+  # Require a login for the whole site.
+  enforcePrivacy: false
+  enableLogging: false
+  # Empty = Keycloak layout below <issuer>/protocol/openid-connect/
+  endpoints:
+    login: ""
+    token: ""
+    userinfo: ""
+    logout: ""
+    jwks: ""
+
+# wp-content on a persistent volume. Disabled = emptyDir (data is lost on
+# every restart).
+persistence:
+  enabled: true
+  # existingClaim: ""
+  # Directory inside the volume that holds wp-content (subPath), e.g.
+  # "wordpress/wp-content" for data from the Bitnami chart.
+  subPath: ""
+  size: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClass: ""
+  annotations: {}
+
+# Size limit of /tmp, which also holds uploads while PHP receives them.
+tmpSizeLimit: 2Gi
+
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: blog.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: wordpress-tls
+  #    hosts:
+  #      - blog.example.com
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+# The probes fetch a static file: they check Apache, not the database. A
+# database outage should show the WordPress error page, not restart the pod.
+livenessProbe:
+  httpGet:
+    path: /wp-includes/images/blank.gif
+    port: http
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /wp-includes/images/blank.gif
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# The first start copies the core (~70 MB) into the emptyDir.
+startupProbe:
+  httpGet:
+    path: /wp-includes/images/blank.gif
+    port: http
+  periodSeconds: 5
+  failureThreshold: 24
+
+networkPolicy:
+  enabled: false
+  ingressRules:
+    - ports:
+        - port: 8080
+          protocol: TCP
+  # DNS, database, SMTP and HTTP(S) for updates and OIDC
+  egressRules:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - ports:
+        - port: 3306
+          protocol: TCP
+        - port: 25
+          protocol: TCP
+        - port: 587
+          protocol: TCP
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+
+nodeSelector: {}
+
+# hostAliases adds entries to the pod's /etc/hosts - useful when internal DNS
+# resolution differs from public routing, e.g. to reach an OIDC IdP via its public IP.
+hostAliases: []
+# - ip: "1.2.3.4"
+#   hostnames:
+#     - "keycloak.example.com"
+
+tolerations: []
+affinity: {}
+
+extraEnv: []
+# - name: FOO
+#   valueFrom:
+#     secretKeyRef:
+#       name: my-secret
+#       key: my-key
+
+extraVolumes: []
+extraVolumeMounts: []
+
+# Deploy arbitrary additional Kubernetes objects alongside the chart.
+# Values are rendered as templates so you can use {{ .Release.Name }}, etc.
+extraDeploy: []

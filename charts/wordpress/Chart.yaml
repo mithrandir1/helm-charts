@@ -1,0 +1,26 @@
+apiVersion: v2
+name: wordpress
+description: |
+  WordPress on the official docker.io/library/wordpress (Apache) image. The
+  WordPress core comes from the image on every start (emptyDir docroot), only
+  wp-content lives on a persistent volume - the image tag is the WordPress
+  version. Runs as an arbitrary non-root uid with a read-only root filesystem,
+  external MySQL/MariaDB, optional OpenID Connect login via the
+  "OpenID Connect Generic Client" plugin.
+type: application
+version: 0.1.0
+appVersion: "7.1.4"
+home: https://wordpress.org
+icon: https://s.w.org/style/images/about/WordPress-logotype-wmark.png
+sources:
+  - https://github.com/docker-library/wordpress
+  - https://github.com/oidc-wp/openid-connect-generic
+keywords:
+  - wordpress
+  - blog
+  - cms
+  - php
+  - apache
+maintainers:
+  - name: mithrandir1
+    url: https://github.com/mithrandir1

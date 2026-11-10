@@ -1,0 +1,500 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "wordpress Helm Chart Values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "0 or 1"
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        },
+        "tag": {
+          "type": "string",
+          "pattern": "^$|apache$",
+          "description": "Only the Apache variants work with this chart"
+        },
+        "digest": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "pullPolicy"
+      ]
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "annotations": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "podAnnotations": {
+      "type": "object"
+    },
+    "podLabels": {
+      "type": "object"
+    },
+    "podSecurityContext": {
+      "type": "object"
+    },
+    "securityContext": {
+      "type": "object"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^$|^https?://[^'\\\\\\s]+$",
+      "description": "Public URL, sets WP_HOME and WP_SITEURL"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        },
+        "tablePrefix": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]+$"
+        },
+        "charset": {
+          "type": "string"
+        },
+        "collate": {
+          "type": "string"
+        },
+        "existingSecret": {
+          "type": "string"
+        },
+        "existingSecretPasswordKey": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "host",
+        "name",
+        "user"
+      ]
+    },
+    "secret": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "existingSecret": {
+          "type": "string"
+        },
+        "values": {
+          "type": "object"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "disableCoreAutoUpdate": {
+          "type": "boolean"
+        },
+        "fsMethod": {
+          "type": "string",
+          "pattern": "^[^'\\\\]*$",
+          "enum": [
+            "",
+            "direct",
+            "ssh2",
+            "ftpext",
+            "ftpsockets"
+          ]
+        },
+        "debug": {
+          "type": "boolean"
+        },
+        "extra": {
+          "type": "string"
+        }
+      }
+    },
+    "php": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uploadMaxFilesize": {
+          "type": "string",
+          "pattern": "^[0-9]+[KMG]?$"
+        },
+        "postMaxSize": {
+          "type": "string",
+          "pattern": "^[0-9]+[KMG]?$"
+        },
+        "memoryLimit": {
+          "type": "string",
+          "pattern": "^(-1|[0-9]+[KMG]?)$"
+        },
+        "maxExecutionTime": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxInputTime": {
+          "type": "integer",
+          "minimum": -1
+        },
+        "extraIni": {
+          "type": "string"
+        }
+      }
+    },
+    "apache": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "port": {
+          "type": "integer",
+          "minimum": 1025,
+          "maximum": 65535,
+          "description": "Unprivileged port, the container drops all capabilities"
+        },
+        "startServers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minSpareServers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxSpareServers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxRequestWorkers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxConnectionsPerChild": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "oidc": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^$|^https?://[^'\\\\\\s]+$"
+        },
+        "clientId": {
+          "type": "string",
+          "pattern": "^[^'\\\\]*$"
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^[^'\\\\]*$"
+        },
+        "loginType": {
+          "type": "string",
+          "enum": [
+            "button",
+            "auto"
+          ]
+        },
+        "linkExistingUsers": {
+          "type": "boolean"
+        },
+        "createIfDoesNotExist": {
+          "type": "boolean"
+        },
+        "redirectUserBack": {
+          "type": "boolean"
+        },
+        "redirectOnLogout": {
+          "type": "boolean"
+        },
+        "enforcePrivacy": {
+          "type": "boolean"
+        },
+        "enableLogging": {
+          "type": "boolean"
+        },
+        "endpoints": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "login": {
+              "type": "string",
+              "pattern": "^$|^https?://[^'\\\\\\s]+$"
+            },
+            "token": {
+              "type": "string",
+              "pattern": "^$|^https?://[^'\\\\\\s]+$"
+            },
+            "userinfo": {
+              "type": "string",
+              "pattern": "^$|^https?://[^'\\\\\\s]+$"
+            },
+            "logout": {
+              "type": "string",
+              "pattern": "^$|^https?://[^'\\\\\\s]+$"
+            },
+            "jwks": {
+              "type": "string",
+              "pattern": "^$|^https?://[^'\\\\\\s]+$"
+            }
+          }
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "existingClaim": {
+          "type": "string"
+        },
+        "subPath": {
+          "type": "string",
+          "pattern": "^$|^[^/].*"
+        },
+        "size": {
+          "type": "string"
+        },
+        "accessModes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ReadWriteOnce",
+              "ReadWriteOncePod",
+              "ReadWriteMany",
+              "ReadOnlyMany"
+            ]
+          }
+        },
+        "storageClass": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "enabled"
+      ]
+    },
+    "tmpSizeLimit": {
+      "type": "string"
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "ClusterIP",
+            "NodePort",
+            "LoadBalancer"
+          ]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "annotations": {
+          "type": "object"
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "className": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object"
+        },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "pathType": {
+                      "type": "string",
+                      "enum": [
+                        "Exact",
+                        "Prefix",
+                        "ImplementationSpecific"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "host",
+              "paths"
+            ]
+          }
+        },
+        "tls": {
+          "type": "array"
+        }
+      }
+    },
+    "resources": {
+      "type": "object"
+    },
+    "livenessProbe": {
+      "type": "object"
+    },
+    "readinessProbe": {
+      "type": "object"
+    },
+    "startupProbe": {
+      "type": "object"
+    },
+    "networkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "ingressRules": {
+          "type": "array"
+        },
+        "egressRules": {
+          "type": "array"
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object"
+    },
+    "hostAliases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "hostnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ip",
+          "hostnames"
+        ]
+      }
+    },
+    "tolerations": {
+      "type": "array"
+    },
+    "affinity": {
+      "type": "object"
+    },
+    "extraEnv": {
+      "type": "array"
+    },
+    "extraVolumes": {
+      "type": "array"
+    },
+    "extraVolumeMounts": {
+      "type": "array"
+    },
+    "extraDeploy": {
+      "type": "array"
+    }
+  }
+}

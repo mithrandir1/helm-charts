@@ -1,0 +1,62 @@
+{{- if not .Values.database.host }}
+{{- fail "database.host is required" }}
+{{- end }}
+{{- if and .Values.oidc.enabled (or (not .Values.oidc.issuer) (not .Values.oidc.clientId)) }}
+{{- fail "oidc.enabled requires oidc.issuer and oidc.clientId" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wordpress.fullname" . }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+data:
+  TZ: {{ .Values.timezone | quote }}
+  WORDPRESS_DB_HOST: {{ .Values.database.host | quote }}
+  WORDPRESS_DB_NAME: {{ .Values.database.name | quote }}
+  WORDPRESS_DB_USER: {{ .Values.database.user | quote }}
+  WORDPRESS_DB_CHARSET: {{ .Values.database.charset | quote }}
+  WORDPRESS_DB_COLLATE: {{ .Values.database.collate | quote }}
+  WORDPRESS_TABLE_PREFIX: {{ .Values.database.tablePrefix | quote }}
+  {{- if .Values.config.debug }}
+  WORDPRESS_DEBUG: "1"
+  {{- end }}
+  WORDPRESS_CONFIG_EXTRA: |
+    {{- include "wordpress.configExtra" . | trim | nindent 4 }}
+---
+# Apache and PHP configuration, mounted file by file over the image defaults.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wordpress.fullname" . }}-files
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+data:
+  ports.conf: |
+    ServerName {{ include "wordpress.host" . }}
+    Listen {{ .Values.apache.port }}
+  000-default.conf: |
+    <VirtualHost *:{{ .Values.apache.port }}>
+      ServerName {{ include "wordpress.host" . }}
+      DocumentRoot /var/www/html
+      ErrorLog ${APACHE_LOG_DIR}/error.log
+      CustomLog ${APACHE_LOG_DIR}/access.log combined
+    </VirtualHost>
+  mpm_prefork.conf: |
+    <IfModule mpm_prefork_module>
+      StartServers            {{ .Values.apache.startServers }}
+      MinSpareServers         {{ .Values.apache.minSpareServers }}
+      MaxSpareServers         {{ .Values.apache.maxSpareServers }}
+      MaxRequestWorkers       {{ .Values.apache.maxRequestWorkers }}
+      MaxConnectionsPerChild  {{ .Values.apache.maxConnectionsPerChild }}
+    </IfModule>
+  zz-chart.ini: |
+    upload_max_filesize = {{ .Values.php.uploadMaxFilesize }}
+    post_max_size = {{ .Values.php.postMaxSize }}
+    memory_limit = {{ .Values.php.memoryLimit }}
+    max_execution_time = {{ .Values.php.maxExecutionTime }}
+    max_input_time = {{ .Values.php.maxInputTime }}
+    expose_php = Off
+    {{- with .Values.php.extraIni }}
+    {{- . | nindent 4 }}
+    {{- end }}

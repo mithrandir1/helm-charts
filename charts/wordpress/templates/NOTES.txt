@@ -1,0 +1,32 @@
+WordPress {{ include "wordpress.imageTag" . }} is being deployed.
+
+1. Application URL:
+{{- if .Values.url }}
+  {{ .Values.url }}
+{{- else if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "wordpress.fullname" . }} 8080:{{ .Values.service.port }}
+{{- end }}
+
+2. The core comes from the image on every start. Update WordPress by changing
+   image.tag, not from the dashboard; afterwards open /wp-admin once so
+   WordPress can upgrade the database.
+{{- if .Values.oidc.enabled }}
+
+3. OIDC: install and activate the plugin "OpenID Connect Generic Client"
+   (daggerhart-openid-connect-generic). Callback URL for the IdP:
+   {{ trimSuffix "/" (.Values.url | default "https://<host>") }}/wp-admin/admin-ajax.php?action=openid-connect-authorize
+{{- end }}
+{{- if not (include "wordpress.secretName" .) }}
+
+WARNING: No Secret with WORDPRESS_AUTH_KEY & co. configured - the wp-config.php
+         gets new random keys on every start and everybody is signed out.
+{{- end }}
+{{- if not .Values.persistence.enabled }}
+
+WARNING: persistence is disabled - wp-content (uploads, plugins, themes) lives
+         in an emptyDir and is lost whenever the pod is recreated.
+{{- end }}
