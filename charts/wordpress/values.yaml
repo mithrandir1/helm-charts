@@ -111,13 +111,30 @@ php:
 apache:
   # Unprivileged port, so the container needs no NET_BIND_SERVICE.
   port: 8080
-  # mpm_prefork: every worker is a PHP process that may use up to
-  # php.memoryLimit - keep workers x memoryLimit in line with resources.limits.
+  # mpm_prefork: every request - static files included - occupies a whole
+  # worker process. A worker that ran PHP typically uses 50-60 MB (PSS), at
+  # most php.memoryLimit - keep workers x that in line with resources.limits.
+  # Too few workers make pages with many assets stall.
   startServers: 2
   minSpareServers: 2
   maxSpareServers: 5
   maxRequestWorkers: 20
   maxConnectionsPerChild: 1000
+  # Seconds an idle keep-alive connection holds its worker. The ingress keeps
+  # its connections to the pod open, so the image default of 5 s ties up
+  # prefork workers that could serve the next request.
+  keepAliveTimeout: 2
+  # Browser caching for static files: mod_expires sets Expires and
+  # Cache-Control max-age by content type. Without it browsers revalidate
+  # every asset on every page view. WordPress appends ?ver= to CSS and JS,
+  # so updates still reach the browser immediately. Values are mod_expires
+  # intervals, an empty value leaves the type uncached.
+  expires:
+    enabled: true
+    # image/*, video/*, audio/* and fonts
+    media: "access plus 30 days"
+    # CSS and JavaScript
+    assets: "access plus 7 days"
 
 # OpenID Connect login through the "OpenID Connect Generic Client" plugin
 # (slug daggerhart-openid-connect-generic). The chart does not install the

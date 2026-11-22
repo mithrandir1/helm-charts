@@ -35,12 +35,32 @@ data:
   ports.conf: |
     ServerName {{ include "wordpress.host" . }}
     Listen {{ .Values.apache.port }}
+    KeepAliveTimeout {{ .Values.apache.keepAliveTimeout }}
   000-default.conf: |
     <VirtualHost *:{{ .Values.apache.port }}>
       ServerName {{ include "wordpress.host" . }}
       DocumentRoot /var/www/html
       ErrorLog ${APACHE_LOG_DIR}/error.log
       CustomLog ${APACHE_LOG_DIR}/access.log combined
+      {{- with .Values.apache.expires }}
+      {{- if .enabled }}
+      <IfModule mod_expires.c>
+        ExpiresActive On
+        {{- with .media }}
+        ExpiresByType image/* {{ . | quote }}
+        ExpiresByType video/* {{ . | quote }}
+        ExpiresByType audio/* {{ . | quote }}
+        ExpiresByType font/* {{ . | quote }}
+        ExpiresByType application/vnd.ms-fontobject {{ . | quote }}
+        {{- end }}
+        {{- with .assets }}
+        ExpiresByType text/css {{ . | quote }}
+        ExpiresByType text/javascript {{ . | quote }}
+        ExpiresByType application/javascript {{ . | quote }}
+        {{- end }}
+      </IfModule>
+      {{- end }}
+      {{- end }}
     </VirtualHost>
   mpm_prefork.conf: |
     <IfModule mpm_prefork_module>

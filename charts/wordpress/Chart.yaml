@@ -8,8 +8,8 @@ description: |
   external MySQL/MariaDB, optional OpenID Connect login via the
   "OpenID Connect Generic Client" plugin.
 type: application
-version: 0.2.0
-appVersion: "7.1.4"
+version: 0.3.0
+appVersion: "7.1.5"
 home: https://wordpress.org
 icon: https://s.w.org/style/images/about/WordPress-logotype-wmark.png
 sources:

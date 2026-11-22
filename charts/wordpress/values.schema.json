@@ -232,6 +232,29 @@
         "maxConnectionsPerChild": {
           "type": "integer",
           "minimum": 0
+        },
+        "keepAliveTimeout": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Seconds an idle keep-alive connection holds its prefork worker"
+        },
+        "expires": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Browser caching for static files via mod_expires",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "media": {
+              "type": "string",
+              "description": "mod_expires interval for images, video, audio and fonts, empty = no caching"
+            },
+            "assets": {
+              "type": "string",
+              "description": "mod_expires interval for CSS and JavaScript, empty = no caching"
+            }
+          }
         }
       }
     },

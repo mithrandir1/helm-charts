@@ -19,7 +19,8 @@ with an external MySQL/MariaDB.
 - Compliant with the `restricted` Pod Security Standard: any non-root uid
   (default 33 = www-data; use the uid that owns your existing `wp-content`),
   read-only root filesystem, no capabilities, Apache on port 8080.
-- PHP limits, Apache `mpm_prefork` worker count, `WP_HOME`/`WP_SITEURL` and
+- PHP limits, Apache `mpm_prefork` worker count and keep-alive timeout,
+  browser caching of static files (mod_expires), `WP_HOME`/`WP_SITEURL` and
   further `wp-config.php` lines from values.
 - Optional OpenID Connect login via the
   [OpenID Connect Generic Client](https://wordpress.org/plugins/daggerhart-openid-connect-generic/)
